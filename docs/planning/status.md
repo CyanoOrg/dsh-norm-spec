@@ -30,10 +30,14 @@
   2. Post-edit validation E2E: DONE 2026-08-15 (commit 971c015) —
      write tool result carries soft feedback, next model request sees
      it; dual-channel assertion PASS (dsh-e2e-postedit.mjs).
-  3. lib/ build pipeline: scripts/build-plugin-lib.sh added (commit
+  3. Skill distribution: DONE 2026-08-16 (D009) — one dsh-specific
+     Skill (`skills/dsh-norm-spec/SKILL.md`) registered at runtime via
+     `ctx.skills.register` from the package file; rank 250, project
+     roots override, uninstall removes. Cordis smoke verifies listed /
+     both-invocable / provider runtime / body-from-package; dsh E2E
+     regression green with `inject: ["tools", "skills"]`.
+  4. lib/ build pipeline: scripts/build-plugin-lib.sh added (commit
      1d08f67); formal packaging still deferred with D004.
-  4. skills/dsh-norm-spec SKILL.md (pi-norm-spec D007 pattern) — directory
-     exists, file not written.
   5. .github CI workflows — deferred with GitHub remote (D004).
 - E2E verified 2026-08-15 (scripts/dsh-e2e-stub.mjs): real dsh 0.1.0-rc.6
   CLI, headless profile, bundle-patch plugin install (pnpm file:), stub
@@ -58,6 +62,7 @@
 | dsh E2E (injection) | `scripts/dsh-e2e-stub.mjs` | green (injection reaches model request) |
 | dsh E2E (single-slot) | `scripts/dsh-e2e-slot.mjs` | green (one reminder, replaced on change) |
 | dsh E2E (post-edit) | `scripts/dsh-e2e-postedit.mjs` | green (soft feedback in log + next request) |
+| Cordis smoke (skills) | `scripts/cordis-smoke.mjs` | green (skill listed, both-invocable, runtime provider, body from package) |
 
 ## Decision index
 
@@ -65,5 +70,6 @@
   session events; D004 — rc.6 pin + local dev, publication deferred; D005 —
   independent 0.1.0-alpha.1 line; D006 — empty enforcement; D007 — ambient
   bridge for agent-less tool calls; D008 — durable injection stays,
-  single-slot replacement approved as the bounded-occupancy follow-up. See
+  single-slot replacement approved as the bounded-occupancy follow-up; D009 —
+  one dsh-specific Skill registered at runtime from the plugin package. See
   `docs/decisions.md`.
