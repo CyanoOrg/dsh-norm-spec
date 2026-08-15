@@ -24,15 +24,20 @@
   are `startup-failure`/`crash-after-ready` (not `startup-failed`/`crash`
   — mismatch hangs the runner; that was diagnosed 2026-08-15).
 - Known open items, in order:
-  1. Real DSH rc.6 host verification (t8): plugin load via `cordis.yml`,
-     one session with a sample `.norm` project, injection/validation/
-     native tools observed end to end.
-  2. Sealed-payload plumbing for local runs: build the bridge binary
-     (`cargo build --release`) and point `DSH_NORM_BRIDGE`/`DSH_NORM_PAYLOAD`
-     at a verified payload; today's tests only exercise the fake bridge.
+  1. Post-edit validation E2E: the stub-LLM run proves injection; a
+     follow-up run should drive a write/edit tool call and observe the
+     `tools/post-execute` feedback in the next model request.
+  2. lib/ build pipeline: the E2E used a hand-built lib/ (tsc + sed for
+     .ts -> .js import suffixes). Package a reproducible build script
+     before any distribution (D004 blocks npm anyway).
   3. skills/dsh-norm-spec SKILL.md (pi-norm-spec D007 pattern) — directory
      exists, file not written.
   4. .github CI workflows — deferred with GitHub remote (D004).
+- E2E verified 2026-08-15 (scripts/dsh-e2e-stub.mjs): real dsh 0.1.0-rc.6
+  CLI, headless profile, bundle-patch plugin install (pnpm file:), stub
+  SSE LLM asserting the `.norm` `<system-reminder>` arrives in the
+  model-visible turn. Bridge readiness race at pre-step was found and
+  fixed in that run (await startBridgeFor, per-session starting guard).
 - Hard constraints active: never write custom session event types (D003);
   no `PATH` fallback for the bridge (runtime-resolver env vars only until
   packaging exists); enforcement subset empty (D006).
@@ -47,6 +52,8 @@
 | `.norm` | `norm validate .norm --strict` | OK, 0 errors |
 | TS typecheck | `npm run typecheck` | green |
 | TS tests | `npm test` (typecheck + 5 bridge tests) | green |
+| Cordis smoke | `scripts/cordis-smoke.mjs` | green (mount, tools, round-trips) |
+| dsh E2E | `scripts/dsh-e2e-stub.mjs` | green (injection reaches model request) |
 
 ## Decision index
 
