@@ -1,0 +1,16 @@
+[package]
+name = "dsh-norm-engine"
+description = "Framework-neutral policy engine for the dsh norm-spec adapter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

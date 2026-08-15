@@ -1,0 +1,51 @@
+---
+metadata:
+  layer: root
+  profile: root
+  scope: ./
+  version: "1.0"
+  description: dsh-norm-spec hybrid repository governance
+
+template:
+  required_files: [AGENTS.md, README.md, CHANGELOG.md, ROADMAP.md, Cargo.toml, package.json, SECURITY.md, CODE_OF_CONDUCT.md]
+  required_directories: [.github/, crates/, docs/, src/, scripts/, tests/]
+  naming_convention:
+    - "kebab-case for crate and planning directory names"
+    - "kebab-case TypeScript source filenames"
+  single_source_of_truth:
+    - source: docs/ARCHITECTURE.md
+      for: the Rust and TypeScript boundary
+    - source: docs/decisions.md
+      for: decisions and rationale
+    - source: docs/planning/status.md
+      for: current development state
+
+agent_rules:
+  update_order:
+    - "Record protocol or enforcement decisions before implementation"
+    - "Implement semantics in Rust and keep the TypeScript adapter thin"
+    - "Run Rust, TypeScript, and applicable end-to-end gates"
+  reference_policy:
+    target_must_exist: true
+    allow_external: false
+    require_description: true
+
+strong_references:
+  - type: source
+    target: /docs/ARCHITECTURE.md
+    sync: auto_pull
+    validation: strict
+    description: Architecture defines which side owns each behavior
+---
+
+# Repository conventions
+
+TypeScript adapts DSH Cordis events; Rust owns the engine and bridge.
+Format semantics remain upstream in norm-spec.
+
+## Hard constraints
+
+- Never write custom DSH session event types (docs/decisions.md D003).
+- DSH host surface pinned to 0.1.0-rc.6 until D004 reopens.
+- Forked bridge code diverges from pi-norm-spec only through recorded
+  decisions (D001).

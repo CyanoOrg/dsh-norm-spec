@@ -1,0 +1,25 @@
+[package]
+name = "dsh-norm-bridge"
+description = "Versioned process bridge between the DSH TypeScript plugin and the Rust policy engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "dsh-norm-bridge"
+path = "src/main.rs"
+
+[dependencies]
+dsh-norm-engine = { path = "../dsh-norm-engine", version = "0.1.0-alpha.1" }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+tempfile = "3.23.0"
+
+[lints]
+workspace = true

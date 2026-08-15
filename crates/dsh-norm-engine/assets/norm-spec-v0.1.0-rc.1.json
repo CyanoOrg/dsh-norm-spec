@@ -1,0 +1,63 @@
+{
+  "apiVersion": "dsh-norm-spec/upstream-pin/v1",
+  "repository": "https://github.com/CyanoOrg/norm-spec",
+  "tag": "v0.1.0-rc.1",
+  "sourceRevision": "5c781964b6d9b11c52f29e5b6e2bbe13c25a5ee0",
+  "compatibility": {
+    "apiVersion": "norm-spec/compatibility/v1",
+    "product": {
+      "name": "norm-spec",
+      "version": "0.1.0-rc.1"
+    },
+    "formats": [
+      "norm-spec/a1"
+    ],
+    "rustApi": {
+      "id": "norm-spec/rust-api/v1",
+      "package": "norm-spec",
+      "version": "0.1.0-rc.1"
+    },
+    "machineApis": [
+      "norm-spec/collect/v1",
+      "norm-spec/compatibility/v1",
+      "norm-spec/error/v1",
+      "norm-spec/init/v1",
+      "norm-spec/parse/v1",
+      "norm-spec/scan/v1",
+      "norm-spec/validate/v1"
+    ],
+    "conformance": {
+      "bundleApi": "norm-spec/contract-bundle/v1",
+      "reportApi": "norm-spec/conformance/v1",
+      "suite": "norm-spec/a1-cli/v1",
+      "caseCount": 82,
+      "contractDigest": "sha256:3d94441e9cde3ef9489618bdb8fbf37f6979331bea099acadf0136b65df7e2eb"
+    }
+  },
+  "assets": [
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "name": "norm-spec-0.1.0-rc.1-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "02c9e896d972fdae20ce6222f5cde62c759079718fc3cebfb3bacb6970e172ab",
+      "url": "https://github.com/CyanoOrg/norm-spec/releases/download/v0.1.0-rc.1/norm-spec-0.1.0-rc.1-x86_64-unknown-linux-gnu.tar.gz"
+    },
+    {
+      "target": "aarch64-apple-darwin",
+      "name": "norm-spec-0.1.0-rc.1-aarch64-apple-darwin.tar.gz",
+      "sha256": "a51712eac951aaf1e543548a000ebce62174f3038e5b45606ba7f5b3a5f82dee",
+      "url": "https://github.com/CyanoOrg/norm-spec/releases/download/v0.1.0-rc.1/norm-spec-0.1.0-rc.1-aarch64-apple-darwin.tar.gz"
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "name": "norm-spec-0.1.0-rc.1-x86_64-apple-darwin.tar.gz",
+      "sha256": "1b63a5d87a2e6da8362d2da23cc575e9b197f2100641b9d4b056c1c77d83db26",
+      "url": "https://github.com/CyanoOrg/norm-spec/releases/download/v0.1.0-rc.1/norm-spec-0.1.0-rc.1-x86_64-apple-darwin.tar.gz"
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "name": "norm-spec-0.1.0-rc.1-x86_64-pc-windows-msvc.tar.gz",
+      "sha256": "63e1f97998df92d549995338a83aed4d17f10bb6dea5388418468748347845c4",
+      "url": "https://github.com/CyanoOrg/norm-spec/releases/download/v0.1.0-rc.1/norm-spec-0.1.0-rc.1-x86_64-pc-windows-msvc.tar.gz"
+    }
+  ]
+}
