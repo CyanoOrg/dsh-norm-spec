@@ -42,6 +42,11 @@ const PROMPT_CONTEXT_API = "dsh-norm-spec/prompt-context/v1";
 const INCOMPLETE_BEHAVIOR = "enforcement is not implemented";
 const SOURCE_KIND = "dsh-norm-spec-context";
 
+/** Cordis plugin name used by loader diagnostics. */
+export const name = "dsh-norm-spec";
+/** Services required by this plugin (tool registration). */
+export const inject = ["tools"];
+
 export interface Config {
   /** Explicit launch for the bundled bridge; defaults to the packaged runtime. */
   launch?: BridgeLaunch;
@@ -74,6 +79,12 @@ interface SessionState {
 export function apply(ctx: Context, config: Config = {}): void {
   const sessions = new WeakMap<object, SessionState>();
 
+  // Plugin-level fallback bridge for agent-less tool calls (Code Mode,
+  // harnesses, direct registry consumers). Agent sessions keep their own
+  // bridge so session lifecycle stays observable.
+  let ambientState: SessionState | undefined;
+  let ambientStarting: Promise<void> | undefined;
+
   const stateFor = (agent: Agent): SessionState => {
     let state = sessions.get(agent.session);
     if (state === undefined) {
@@ -93,8 +104,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     return state;
   };
 
-  const startBridge = async (agent: Agent): Promise<void> => {
-    const state = stateFor(agent);
+  const startBridgeFor = async (state: SessionState): Promise<void> => {
     if (state.disposed || state.client !== undefined) return;
     try {
       const launch = config.launch ?? (await defaultLaunch());
@@ -113,6 +123,46 @@ export function apply(ctx: Context, config: Config = {}): void {
     } catch (error) {
       if (!state.disposed) state.failure = asBridgeError(error);
     }
+  };
+
+  const startBridge = async (agent: Agent): Promise<void> => {
+    await startBridgeFor(stateFor(agent));
+  };
+
+  const ambientBridge = async (): Promise<SessionState> => {
+    if (ambientState === undefined) {
+      ambientState = {
+        client: undefined,
+        failure: undefined,
+        lastDigest: undefined,
+        lastContext: undefined,
+        activeTarget: ".",
+        onboardingNotified: false,
+        validationFailure: undefined,
+        validationTail: Promise.resolve(),
+        disposed: false,
+      };
+      ctx.effect(() => () => {
+        const state = ambientState;
+        ambientState = undefined;
+        ambientStarting = undefined;
+        if (state !== undefined) {
+          state.disposed = true;
+          const client = state.client;
+          state.client = undefined;
+          if (client !== undefined && client.getStatus().state !== "failed") {
+            void client.shutdown().catch(() => undefined);
+          }
+        }
+      }, `${PLUGIN_NAME}.ambient`);
+    }
+    if (ambientState.client === undefined && ambientStarting === undefined) {
+      ambientStarting = startBridgeFor(ambientState).finally(() => {
+        ambientStarting = undefined;
+      });
+    }
+    await ambientStarting;
+    return ambientState;
   };
 
   const stopBridge = async (agent: Agent): Promise<void> => {
@@ -251,13 +301,15 @@ export function apply(ctx: Context, config: Config = {}): void {
 
   const resolveToolClient: ClientResolver = async (exec) => {
     const agent = exec.agent;
+    const state = agent !== undefined ? stateFor(agent) : await ambientBridge();
     if (agent !== undefined) await startBridge(agent);
-    const state = agent !== undefined ? stateFor(agent) : undefined;
-    const client = state?.client;
+    const client = state.client;
     if (client === undefined || client.getStatus().state !== "ready") {
       throw new BridgeClientError(
         "dsh-norm-spec/client/tool-unavailable",
-        "no ready session bridge for this tool call",
+        agent !== undefined
+          ? "no ready session bridge for this tool call"
+          : "no ready ambient bridge for this tool call",
       );
     }
     return client;

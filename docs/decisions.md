@@ -99,3 +99,21 @@ upstream closed typed operation-policy declaration does not.
 assurance. Reopen requires the same two prerequisites as pi-norm-spec:
 an upstream typed policy declaration and a host-side final-input
 guarantee.
+
+## D007 — Provide an ambient fallback bridge for agent-less tool calls
+
+**Decision.** Native tools resolve their bridge through the calling agent's
+session state when `exec.agent` exists, and through one plugin-level ambient
+bridge otherwise. The ambient bridge is created lazily on first agent-less
+resolution, disposed through a named Cordis effect, and never replaces
+per-agent session bridges.
+
+**Context.** The 2026-08-15 Cordis smoke against the real dsh-tools
+ToolRuntime showed tool calls can arrive without an agent (harnesses, Code
+Mode sub-dispatch views, direct registry consumers). The first
+implementation threw `tool-unavailable` for every such call.
+
+**Rationale.** Tool semantics do not depend on agent session state; the
+sealed-payload bridge is stateless across calls. A single ambient child
+keeps agent-less calls functional while per-agent bridges preserve D008's
+observable session lifecycle for the injection path.
