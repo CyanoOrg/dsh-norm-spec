@@ -14,6 +14,7 @@ import { dirname } from "node:path";
 
 import type { Context } from "@deepseek-ai/cordis";
 import type { Agent, PreStepDecision } from "@deepseek-ai/dsh-agent";
+import type { Session } from "@deepseek-ai/dsh-session";
 import type { PostToolDecision, ToolExecution, ToolExecutionResult } from "@deepseek-ai/dsh-tools";
 import { createUserMessage, type UserMessage } from "@deepseek-ai/dsh-llm";
 
@@ -186,6 +187,35 @@ export function apply(ctx: Context, config: Config = {}): void {
     }
   };
 
+  /** Locate the current convention slot on the session surface (D008). */
+  const findConventionSlot = (session: Session) => {
+    const surface = new Set<number>(session.surface.nodes);
+    for (let index = session.events.length - 1; index >= 0; index -= 1) {
+      const event = session.events[index];
+      if (event === undefined || event.type !== "user/message") continue;
+      const source = event.data.source;
+      if (
+        source === undefined ||
+        source.kind !== "plugin" ||
+        source.plugin !== PLUGIN_NAME
+      ) {
+        continue;
+      }
+      if (surface.has(event.seq)) {
+        return { seq: event.seq, text: reminderTextOf(event.data) };
+      }
+      // An own message shadowed off the surface (compaction) ends the scan:
+      // a later replacement is impossible and a fresh slot may append.
+      return null;
+    }
+    return undefined;
+  };
+
+  const reminderTextOf = (message: UserMessage): string => {
+    const first = message.content[0];
+    return first !== undefined && first.type === "text" ? first.text : "";
+  };
+
   const injectContext = async (
     agent: Agent,
     messages: UserMessage[],
@@ -218,10 +248,39 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       const digest = digestText(context.prompt);
       if (digest === state.lastDigest) return decision;
+
+      const reminder = renderSystemReminder(context);
+      const slot = findConventionSlot(agent.session);
+      if (slot !== null && slot !== undefined) {
+        if (slot.text === reminder) {
+          state.lastDigest = digest;
+          return decision;
+        }
+        // Single-slot replacement (D008): shadow the previous reminder in
+        // place through a session surface replace; the step's claimed
+        // messages stay untouched, so no splice into decision.messages.
+        agent.session.append(
+          "user/message",
+          createUserMessage({
+            content: [{ type: "text", text: reminder }],
+            source: {
+              kind: "plugin",
+              plugin: PLUGIN_NAME,
+              form: "instructions",
+            },
+          }),
+          {
+            surfaceOp: { op: "replace", start: slot.seq, end: slot.seq },
+            sourceEventSeqs: [slot.seq],
+          },
+        );
+        state.lastDigest = digest;
+        return decision;
+      }
       state.lastDigest = digest;
 
       const message = createUserMessage({
-        content: [{ type: "text", text: renderSystemReminder(context) }],
+        content: [{ type: "text", text: reminder }],
         source: {
           kind: "plugin",
           plugin: PLUGIN_NAME,

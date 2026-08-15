@@ -4,7 +4,12 @@
   "description": "Rust-backed DeepSeek Harness (dsh) Cordis plugin for norm-spec conventions",
   "license": "MIT",
   "author": "Wade",
-  "keywords": ["dsh", "deepseek-harness", "cordis", "norm-spec"],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "norm-spec"
+  ],
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
@@ -13,7 +18,9 @@
   },
   "normSpec": {
     "productCompat": "=0.1.0-rc.1",
-    "formatCompat": ["norm-spec/a1"],
+    "formatCompat": [
+      "norm-spec/a1"
+    ],
     "compatibilityApi": "norm-spec/compatibility/v1",
     "collectApi": "norm-spec/collect/v1",
     "validateApi": "norm-spec/validate/v1",
@@ -24,7 +31,8 @@
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-agent": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6"
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-session": "^0.1.0-rc.6"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.1",
@@ -32,6 +40,7 @@
     "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
     "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
     "@types/node": "22.19.19",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@deepseek-ai/dsh-session": "0.1.0-rc.6"
   }
 }
