@@ -40,6 +40,7 @@ metadata:
 const app = new Context();
 app.plugin(SystemPrompt);
 app.plugin(ToolRuntime);
+app.plugin((await import("@deepseek-ai/dsh-skill")).default);
 app.plugin(
   await import(`${repo}/src/index.ts`),
   { launch: { command: bridge, args: ["serve", "--payload", payload] } },
@@ -55,6 +56,16 @@ const scan = tools.get("norm_scan");
 console.log("norm_validate:", validate ? "registered" : "missing");
 console.log("norm_collect:", collect ? "registered" : "missing");
 console.log("norm_scan:", scan ? "registered" : "missing");
+
+console.log("== skill registration (D009) ==");
+const listed = await app.skills.list({ cwd: sampleProject });
+const skillSummary = listed.find((skill) => skill.name === "dsh-norm-spec");
+console.log("skill listed:", skillSummary ? "yes" : "no");
+if (skillSummary === undefined) throw new Error("dsh-norm-spec skill not listed");
+console.log("invocation:", JSON.stringify(skillSummary.invocation));
+const definition = await app.skills.get("dsh-norm-spec", { cwd: sampleProject });
+console.log("skill provider:", definition.provider);
+console.log("skill body head:", JSON.stringify(definition.content.slice(0, 40)));
 
 console.log("== norm_scan (real sealed payload round-trip) ==");
 const scanResult = await scan.execute({}, {

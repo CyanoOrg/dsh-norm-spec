@@ -37,6 +37,7 @@ import {
   presentValidationFailure,
   shouldValidateAfterTool,
 } from "./validation-feedback.ts";
+import { loadSkillRegistration } from "./skill-registration.ts";
 
 const PLUGIN_NAME = "dsh-norm-spec";
 const PROMPT_CONTEXT_API = "dsh-norm-spec/prompt-context/v1";
@@ -45,8 +46,8 @@ const SOURCE_KIND = "dsh-norm-spec-context";
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = "dsh-norm-spec";
-/** Services required by this plugin (tool registration). */
-export const inject = ["tools"];
+/** Services required by this plugin (tool registration, skill registry). */
+export const inject = ["tools", "skills"];
 
 export interface Config {
   /** Explicit launch for the bundled bridge; defaults to the packaged runtime. */
@@ -390,6 +391,10 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.tools.register(normValidateTool(resolveToolClient));
   ctx.tools.register(normCollectTool(resolveToolClient));
   ctx.tools.register(normScanTool(resolveToolClient));
+
+  // Runtime Skill registration (D009): one dsh-specific Skill from the
+  // package file. rank 250 — project roots override, uninstall removes.
+  ctx.skills.register(loadSkillRegistration());
 }
 
 function updateActiveTarget(
