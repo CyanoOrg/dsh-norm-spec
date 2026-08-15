@@ -24,15 +24,14 @@
   are `startup-failure`/`crash-after-ready` (not `startup-failed`/`crash`
   — mismatch hangs the runner; that was diagnosed 2026-08-15).
 - Known open items, in order:
-  1. Single-slot replacement (D008 follow-up): verify a plugin can emit a
-     session `surfaceOp` replace (strict `sourceEventSeqs` provenance);
-     raise an upstream helper request if the path is not plugin-accessible.
-  2. Post-edit validation E2E: the stub-LLM run proves injection; a
-     follow-up run should drive a write/edit tool call and observe the
-     `tools/post-execute` feedback in the next model request.
-  3. lib/ build pipeline: the E2E used a hand-built lib/ (tsc + sed for
-     .ts -> .js import suffixes). Package a reproducible build script
-     before any distribution (D004 blocks npm anyway).
+  1. Single-slot replacement: DONE 2026-08-15 (commit 1d08f67) —
+     pre-step rescans the slot, changes shadow in place via surfaceOp
+     replace; E2E PASS (dsh-e2e-slot.mjs).
+  2. Post-edit validation E2E: DONE 2026-08-15 (commit 971c015) —
+     write tool result carries soft feedback, next model request sees
+     it; dual-channel assertion PASS (dsh-e2e-postedit.mjs).
+  3. lib/ build pipeline: scripts/build-plugin-lib.sh added (commit
+     1d08f67); formal packaging still deferred with D004.
   4. skills/dsh-norm-spec SKILL.md (pi-norm-spec D007 pattern) — directory
      exists, file not written.
   5. .github CI workflows — deferred with GitHub remote (D004).
@@ -56,7 +55,9 @@
 | TS typecheck | `npm run typecheck` | green |
 | TS tests | `npm test` (typecheck + 5 bridge tests) | green |
 | Cordis smoke | `scripts/cordis-smoke.mjs` | green (mount, tools, round-trips) |
-| dsh E2E | `scripts/dsh-e2e-stub.mjs` | green (injection reaches model request) |
+| dsh E2E (injection) | `scripts/dsh-e2e-stub.mjs` | green (injection reaches model request) |
+| dsh E2E (single-slot) | `scripts/dsh-e2e-slot.mjs` | green (one reminder, replaced on change) |
+| dsh E2E (post-edit) | `scripts/dsh-e2e-postedit.mjs` | green (soft feedback in log + next request) |
 
 ## Decision index
 
