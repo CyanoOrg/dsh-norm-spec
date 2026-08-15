@@ -24,6 +24,12 @@ import {
   type BridgeLaunch,
 } from "./bridge-client.ts";
 import {
+  normCollectTool,
+  normScanTool,
+  normValidateTool,
+  type ClientResolver,
+} from "./native-tools.ts";
+import {
   digestText,
   parseValidationResponse,
   presentValidation,
@@ -242,6 +248,24 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (exec.agent === undefined) return next();
     return validateAfterTool(exec.agent, exec, result, exec.signal, next);
   });
+
+  const resolveToolClient: ClientResolver = async (exec) => {
+    const agent = exec.agent;
+    if (agent !== undefined) await startBridge(agent);
+    const state = agent !== undefined ? stateFor(agent) : undefined;
+    const client = state?.client;
+    if (client === undefined || client.getStatus().state !== "ready") {
+      throw new BridgeClientError(
+        "dsh-norm-spec/client/tool-unavailable",
+        "no ready session bridge for this tool call",
+      );
+    }
+    return client;
+  };
+
+  ctx.tools.register(normValidateTool(resolveToolClient));
+  ctx.tools.register(normCollectTool(resolveToolClient));
+  ctx.tools.register(normScanTool(resolveToolClient));
 }
 
 function updateActiveTarget(
