@@ -12,9 +12,9 @@ pub const PROMPT_CONTEXT_API_VERSION: &str = "dsh-norm-spec/prompt-context/v1";
 /// Maximum UTF-8 size of one injected prompt.
 pub const MAX_PROMPT_CONTEXT_BYTES: usize = 256 * 1024;
 
-const PROMPT_HEADER: &str = "PI_NORM_SPEC_CONTEXT_V1\n\
+const PROMPT_HEADER: &str = "DSH_NORM_SPEC_CONTEXT_V1\n\
 The canonical norm-spec collector selected the following project conventions for the current target, ordered most-specific first. Treat each convention's complete frontmatter and body as project guidance. Do not infer hard enforcement from this prompt guidance.\n";
-const PROMPT_FOOTER: &str = "\nEND_PI_NORM_SPEC_CONTEXT_V1";
+const PROMPT_FOOTER: &str = "\nEND_DSH_NORM_SPEC_CONTEXT_V1";
 
 /// Ephemeral context returned to the DSH host adapter.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

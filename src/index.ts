@@ -69,6 +69,7 @@ interface SessionState {
   validationFailure: BridgeClientError | undefined;
   validationTail: Promise<void>;
   disposed: boolean;
+  starting: Promise<void> | undefined;
 }
 
 /**
@@ -98,31 +99,39 @@ export function apply(ctx: Context, config: Config = {}): void {
         validationFailure: undefined,
         validationTail: Promise.resolve(),
         disposed: false,
+        starting: undefined,
       };
       sessions.set(agent.session, state);
     }
     return state;
   };
 
-  const startBridgeFor = async (state: SessionState): Promise<void> => {
-    if (state.disposed || state.client !== undefined) return;
-    try {
-      const launch = config.launch ?? (await defaultLaunch());
-      const client = await BridgeClient.start({
-        ...launch,
-        onFailure: (failure) => {
-          if (!state.disposed) state.failure = failure;
-        },
-      });
-      if (state.disposed) {
-        await client.shutdown();
-        return;
-      }
-      state.client = client;
-      state.failure = undefined;
-    } catch (error) {
-      if (!state.disposed) state.failure = asBridgeError(error);
+  const startBridgeFor = (state: SessionState): Promise<void> => {
+    if (state.disposed || state.client !== undefined) return Promise.resolve();
+    if (state.starting === undefined) {
+      state.starting = (async () => {
+        try {
+          const launch = config.launch ?? (await defaultLaunch());
+          const client = await BridgeClient.start({
+            ...launch,
+            onFailure: (failure) => {
+              if (!state.disposed) state.failure = failure;
+            },
+          });
+          if (state.disposed) {
+            await client.shutdown();
+            return;
+          }
+          state.client = client;
+          state.failure = undefined;
+        } catch (error) {
+          if (!state.disposed) state.failure = asBridgeError(error);
+        } finally {
+          state.starting = undefined;
+        }
+      })();
     }
+    return state.starting;
   };
 
   const startBridge = async (agent: Agent): Promise<void> => {
@@ -141,6 +150,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         validationFailure: undefined,
         validationTail: Promise.resolve(),
         disposed: false,
+        starting: undefined,
       };
       ctx.effect(() => () => {
         const state = ambientState;
@@ -183,13 +193,16 @@ export function apply(ctx: Context, config: Config = {}): void {
     next: () => Promise<PreStepDecision>,
   ): Promise<PreStepDecision> => {
     const decision = await next();
+    if (decision.kind !== "enter") return decision;
     const state = stateFor(agent);
+    // Ensure the bridge is up before the first injection: session-start
+    // kicked it off, but pre-step may win the race on fast first steps.
+    await startBridgeFor(state);
     const cwd = agent.session.header.cwd ?? process.cwd();
     const client = state.client;
     if (client === undefined || client.getStatus().state !== "ready") {
       return decision;
     }
-    if (decision.kind !== "enter") return decision;
 
     try {
       const value = await client.request<unknown>(
