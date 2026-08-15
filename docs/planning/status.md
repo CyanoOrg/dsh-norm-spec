@@ -24,15 +24,18 @@
   are `startup-failure`/`crash-after-ready` (not `startup-failed`/`crash`
   — mismatch hangs the runner; that was diagnosed 2026-08-15).
 - Known open items, in order:
-  1. Post-edit validation E2E: the stub-LLM run proves injection; a
+  1. Single-slot replacement (D008 follow-up): verify a plugin can emit a
+     session `surfaceOp` replace (strict `sourceEventSeqs` provenance);
+     raise an upstream helper request if the path is not plugin-accessible.
+  2. Post-edit validation E2E: the stub-LLM run proves injection; a
      follow-up run should drive a write/edit tool call and observe the
      `tools/post-execute` feedback in the next model request.
-  2. lib/ build pipeline: the E2E used a hand-built lib/ (tsc + sed for
+  3. lib/ build pipeline: the E2E used a hand-built lib/ (tsc + sed for
      .ts -> .js import suffixes). Package a reproducible build script
      before any distribution (D004 blocks npm anyway).
-  3. skills/dsh-norm-spec SKILL.md (pi-norm-spec D007 pattern) — directory
+  4. skills/dsh-norm-spec SKILL.md (pi-norm-spec D007 pattern) — directory
      exists, file not written.
-  4. .github CI workflows — deferred with GitHub remote (D004).
+  5. .github CI workflows — deferred with GitHub remote (D004).
 - E2E verified 2026-08-15 (scripts/dsh-e2e-stub.mjs): real dsh 0.1.0-rc.6
   CLI, headless profile, bundle-patch plugin install (pnpm file:), stub
   SSE LLM asserting the `.norm` `<system-reminder>` arrives in the
@@ -57,6 +60,9 @@
 
 ## Decision index
 
-D001 fork bridge; D002 DSH durable injection idiom; D003 no custom session
-events; D004 rc.6 pin + local dev, publication deferred; D005 independent
-0.1.0-alpha.1 line; D006 empty enforcement. See `docs/decisions.md`.
+- D001 — fork bridge; D002 — DSH durable injection idiom; D003 — no custom
+  session events; D004 — rc.6 pin + local dev, publication deferred; D005 —
+  independent 0.1.0-alpha.1 line; D006 — empty enforcement; D007 — ambient
+  bridge for agent-less tool calls; D008 — durable injection stays,
+  single-slot replacement approved as the bounded-occupancy follow-up. See
+  `docs/decisions.md`.

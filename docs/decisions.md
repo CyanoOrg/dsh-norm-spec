@@ -117,3 +117,43 @@ implementation threw `tool-unavailable` for every such call.
 sealed-payload bridge is stateless across calls. A single ambient child
 keeps agent-less calls functional while per-agent bridges preserve D008's
 observable session lifecycle for the injection path.
+
+## D008 — Injection stays durable; bounded occupancy via single-slot replacement is the approved direction
+
+**Decision.** Convention injection keeps the durable `agent/pre-step`
+semantics confirmed by the 2026-08-15 E2E (D002): injected reminders enter
+the session surface once, suppressed thereafter by digest. The pi-norm-spec
+ephemeral per-turn injection model ("use and discard, never entering the
+next turn's context") is explicitly **not** pursued on DSH rc.6. The
+approved follow-up direction is single-slot replacement: keep the
+convention reminder to at most one surface message, shadowing the previous
+one through a session `surfaceOp` replace when conventions change.
+
+**Context.** Source verification against dsh-agent-loop rc.6 (2026-08-15):
+
+- `agent/pre-step` is the only supported message-injection seam, and the
+  loop appends every `decision.messages` entry to the session log as
+  `user/message` with `surfaceOp: "append"` — injection is necessarily
+  durable.
+- The `agent/request` waterfall documents that it "cannot mutate
+  messages"; no ephemeral per-request channel exists in the public API.
+- The dsh-native precedent for bounded occupancy is
+  `RuntimeContextProjection` (runtime-context snapshots): one retained
+  message, superseded snapshots replaced on the surface ("This snapshot
+  supersedes earlier runtime-context snapshots").
+- D007's rationale references "D008" by number in error; it means D002's
+  session-scoped injection lifecycle. Recorded here rather than editing an
+  immutable decision.
+
+**Rationale.** Ephemeral per-turn injection re-sends the prompt every
+request at identical token cost while its position varies per turn,
+defeating prefix-stable KV cache reuse. Durable-once with digest
+suppression is prefix-stable and cache-friendly; the real cost under
+frequent convention changes is unbounded growth, which single-slot
+replacement bounds to one message — the practical equivalent of
+"discarded after use": bounded occupancy, automatic refresh, prior
+versions invisible to the model. Implementation requires verifying a
+plugin can produce replace ops (strict `sourceEventSeqs` provenance
+checks); if a public helper is needed, raise it upstream before
+implementation. Revisit only if the host ships a supported ephemeral
+channel (watch rc.7+).
