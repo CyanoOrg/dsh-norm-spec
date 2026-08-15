@@ -157,3 +157,56 @@ plugin can produce replace ops (strict `sourceEventSeqs` provenance
 checks); if a public helper is needed, raise it upstream before
 implementation. Revisit only if the host ships a supported ephemeral
 channel (watch rc.7+).
+
+## D009 — One dsh-specific Skill, registered at runtime from the plugin package
+
+**Decision.** dsh-norm-spec exposes one Skill owned by this repository.
+The plugin registers it into `ctx.skills` at `apply()` time as a runtime
+skill from the package file, following the pi-norm-spec D007 pattern.
+The Skill documents dsh-specific behavior (injection lifecycle, single
+slot, post-edit feedback, native tools) and links to upstream canonical
+documentation for format authoring and validation; it does not copy or
+surface the upstream canonical Skill as a second product Skill. The
+bundled upstream payload may retain canonical files for provenance, but
+they are not registered as dsh resources.
+
+**Context.** Source verification against dsh-skill rc.6 (2026-08-16):
+
+- `ctx.skills.register(registration)` accepts an embedded runtime skill:
+  `name`, `description`, `content` (markdown body), plus optional
+  `whenToUse`, `invocation`, `provider`. Omitted invocation defaults to
+  both-invocable; omitted provider labels it `"runtime"`.
+- Runtime skills use rank 250: project roots (`.dsh/skills`,
+  `.agents/skills`) override them, and they override the local
+  provider's custom and user roots. Rank 600 is reserved for the
+  host-controlled bundled root (`DSH_BUNDLED_SKILL_DIR`), which a plugin
+  neither controls nor needs.
+- The filesystem provider discovers skills as directories named for the
+  skill containing a `SKILL.md` with YAML frontmatter (`name`,
+  `description` required; `whenToUse`/`invocation` optional). Invalid
+  frontmatter is warned and ignored, not a load failure.
+- The skill consumer surface: `ctx.skills.list()` feeds the durable
+  catalog and the `skill` tool; `ctx.skills.get(name)` loads the body on
+  demand; `renderSkillContent` renders the canonical
+  `<skill_content>` block for the model. A runtime-registered skill is
+  model- and user-invocable by default — no extra registration needed.
+
+**Rationale.** Skill distribution is where multi-framework projects
+actually collide, and runtime registration keeps every collision surface
+clean:
+
+- The plugin is the single distribution unit: `dsh plugin --profile X
+  add dsh-norm-spec` installs automation and skill together; uninstall
+  removes both; user project trees stay untouched.
+- Cross-framework coexistence is structural: host skills are registered
+  in each host's registry and never touch the shared `.norm` data or
+  each other. A user-placed canonical skill (rank wins over runtime) and
+  a plugin-registered host skill describe different concerns (CLI
+  workflow vs host injection behavior) and can coexist by design.
+- The bundled root (`DSH_BUNDLED_SKILL_DIR`) and installer-driven file
+  copies into user roots are explicitly rejected: the first is
+  host-controlled, the second re-creates the exact multi-framework
+  residue problem D009 exists to avoid.
+- Fidelity to pi-norm-spec D007: same shape (one host skill, upstream
+  links, no canonical duplication), mapped onto DSH's runtime
+  registration seam.
