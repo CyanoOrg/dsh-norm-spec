@@ -1,0 +1,103 @@
+name: package-candidates
+
+# D011 P2: build and verify the five-package distribution candidates on
+# every push to main and every PR. Not a required check yet — it graduates
+# into main-quality once proven stable (pi precedent: E2 run 31942383415).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  package-root-candidate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Build and pack the exact root package candidate
+        run: |
+          set -euo pipefail
+          mkdir -p dist/root
+          node --experimental-strip-types scripts/pack-root.mjs
+      - name: Upload root candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-candidate
+          path: dist/root/cyanoorg-dsh-norm-spec-*.tgz*
+          if-no-files-found: error
+          retention-days: 14
+
+  cross-platform:
+    name: cross-platform (${{ matrix.os }}, ${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-15
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build the release bridge on the host target
+        run: cargo build --release -p dsh-norm-bridge
+      - name: Build and pack the exact native candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/candidate
+          bash scripts/build-platform-candidate.sh "${{ matrix.target }}" dist/candidate
+      - name: Upload native candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-${{ matrix.target }}
+          path: dist/candidate/cyanoorg-dsh-norm-spec-*.tgz*
+          if-no-files-found: error
+          retention-days: 14
+
+  package-candidate-set:
+    needs: [package-root-candidate, cross-platform]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download all candidates
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "@(root-candidate|candidate-*)"
+          merge-multiple: true
+          path: dist/downloaded
+      - name: Verify the complete five-package set
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types scripts/check-candidate-set.mjs
+      - name: Upload the aggregate inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-inventory
+          path: dist/downloaded/inventory.json
+          if-no-files-found: error
+          retention-days: 14
