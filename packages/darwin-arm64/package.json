@@ -1,0 +1,21 @@
+{
+  "name": "@cyanoorg/dsh-norm-spec-darwin-arm64",
+  "version": "0.1.0-alpha.1",
+  "description": "Native bridge and sealed norm-spec payload for dsh-norm-spec on aarch64-apple-darwin",
+  "license": "MIT",
+  "author": "Wade <bravetwo@163.com>",
+  "repository": "https://github.com/CyanoOrg/dsh-norm-spec",
+  "type": "module",
+  "files": [
+    "bin",
+    "upstream",
+    "runtime.json",
+    "release.json"
+  ],
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ]
+}

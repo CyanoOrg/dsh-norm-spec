@@ -1,0 +1,45 @@
+{
+  "name": "@cyanoorg/dsh-norm-spec",
+  "version": "0.1.0-alpha.1",
+  "description": "Rust-backed DeepSeek Harness (dsh) Cordis plugin for norm-spec conventions",
+  "license": "MIT",
+  "author": "Wade <bravetwo@163.com>",
+  "repository": "https://github.com/CyanoOrg/dsh-norm-spec",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "cordis-plugin",
+    "norm-spec"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "main": "lib/index.js",
+  "files": [
+    "lib",
+    "skills",
+    "cordis.patch.yml",
+    "release.json"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-agent": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-session": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-skill": "^0.1.0-rc.6"
+  },
+  "optionalDependencies": {
+    "@cyanoorg/dsh-norm-spec-linux-x64": "0.1.0-alpha.1",
+    "@cyanoorg/dsh-norm-spec-darwin-arm64": "0.1.0-alpha.1",
+    "@cyanoorg/dsh-norm-spec-darwin-x64": "0.1.0-alpha.1",
+    "@cyanoorg/dsh-norm-spec-win32-x64": "0.1.0-alpha.1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
