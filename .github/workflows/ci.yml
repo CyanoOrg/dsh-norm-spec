@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features
+
+  ts-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  norm-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate repository .norm with the pinned engine release
+        run: |
+          # Same pinned upstream release the bridge seals locally
+          # (scripts/build-local-runtime.sh); checksum-verified download.
+          set -euo pipefail
+          asset="norm-spec-0.1.0-rc.1-x86_64-unknown-linux-gnu.tar.gz"
+          base="https://github.com/CyanoOrg/norm-spec/releases/download/v0.1.0-rc.1"
+          curl -fsSL -o "$asset" "$base/$asset" -o "$asset.sha256" "$base/$asset.sha256"
+          # Release .sha256 files list the bare asset name; verify then extract.
+          shasum -a 256 --check --status "$asset.sha256"
+          mkdir -p /tmp/norm-runtime
+          tar xzf "$asset" -C /tmp/norm-runtime --strip-components=1
+          /tmp/norm-runtime/bin/norm validate .norm --strict
