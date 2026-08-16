@@ -1,6 +1,6 @@
 {
   "name": "dsh-norm-spec",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-beta.1",
   "description": "Rust-backed DeepSeek Harness (dsh) Cordis plugin for norm-spec conventions",
   "license": "MIT",
   "author": "Wade",

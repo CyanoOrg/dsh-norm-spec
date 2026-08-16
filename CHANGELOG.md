@@ -5,6 +5,41 @@ preparation.
 
 ## [Unreleased]
 
+## [0.1.0-beta.1] - 2026-08-16
+
+First public distribution rehearsal (D011): five @cyanoorg npm packages.
+
+### Added
+
+- D010 governance: public repository, layered branch protection, strict CI
+  (rust-quality, ts-quality, norm-validate), linear signed history.
+- D011 distribution decision: five `@cyanoorg/dsh-norm-spec*` packages
+  (root + four exact-version native optionalDependencies), human-only
+  publication, `0.1.0-beta.1` first public version.
+- Packaged runtime resolution (`src/runtime-resolver.ts`): root release.json
+  identity -> platform-package locator -> version match -> safe relative
+  bridge/payload paths; env overrides stay development-only.
+- Package staging (`scripts/package-staging.ts`): deterministic five-package
+  candidate assembly (compiled lib, packaged bundle patch without env launch,
+  skills, release manifests, sealed upstream payload).
+- Hosted candidate production (D011 P2): `package-candidates` workflow —
+  root candidate, four-platform native candidates with checksum-verified
+  upstream pins, and the aggregate five-package candidate set with a
+  source-revision-bound inventory.
+
+### Changed
+
+- Version promoted 0.1.0-alpha.1 -> 0.1.0-beta.1 across the workspace,
+  npm manifests, and package candidates.
+
+### Constraints
+
+- Never writes custom DSH session event types (D003).
+- No `PATH` fallback for the bridge runtime.
+- Hard enforcement subset is empty (D006); injection is guidance and
+  validation is soft feedback only.
+
+
 ### Added
 
 - Independent `0.1.0-alpha.1` product line for the DeepSeek Harness (dsh)
