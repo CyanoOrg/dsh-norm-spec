@@ -1,0 +1,12 @@
+# dsh-norm-spec bundle patch: mounts the norm-spec convention adapter.
+# The runtime resolves from DSH_NORM_BRIDGE/DSH_NORM_PAYLOAD environment
+# variables until packaged distribution exists (D004). The plugin's
+# resolver rejects an empty command at startup, so a missing environment
+# surfaces as a visible bridge failure rather than silent absence.
+- insert:
+    - id: norm
+      name: 'dsh-norm-spec'
+      config:
+        launch:
+          command: !!js process.env.DSH_NORM_BRIDGE
+          args: !!js "[\"serve\", \"--payload\", process.env.DSH_NORM_PAYLOAD ?? \"\"]"
