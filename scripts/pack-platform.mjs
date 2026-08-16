@@ -33,7 +33,7 @@ if (manifest.name !== `@cyanoorg/dsh-norm-spec-${suffix}`) throw new Error(`stag
 if (manifest.version !== version) throw new Error(`staged manifest version mismatch: ${manifest.version}`);
 
 const tarball = path.join(outputDir, `cyanoorg-dsh-norm-spec-${suffix}-${version}.tgz`);
-execFileSync("npm", ["pack", "--ignore-scripts", `--pack-destination=${outputDir}`, stageDir], { stdio: "pipe" });
+execFileSync("npm", ["pack", "--ignore-scripts", `--pack-destination=${outputDir}`, stageDir], { stdio: "pipe", shell: process.platform === "win32" });
 const bytes = await readFile(tarball);
 const sha256 = createHash("sha256").update(bytes).digest("hex");
 await writeFile(`${tarball}.sha256`, `${sha256}  ${path.basename(tarball)}\n`, "utf8");
