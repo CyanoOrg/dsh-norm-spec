@@ -210,3 +210,34 @@ clean:
 - Fidelity to pi-norm-spec D007: same shape (one host skill, upstream
   links, no canonical duplication), mapped onto DSH's runtime
   registration seam.
+
+## D010 — Public GitHub repository with layered main governance
+
+**Decision.** The canonical repository is `CyanoOrg/dsh-norm-spec`, public,
+default branch `main`, governed by the layered rulesets replicated from
+pi-norm-spec D014: `main-integrity` (no deletion, no non-fast-forward,
+linear signed history), `main-quality` (exact strict CI contexts
+rust-quality / ts-quality / norm-validate, no bypass), `main-review`
+(one approving review, stale-review dismissal, resolved threads; the
+`norm-release-managers` team may bypass), and `release-tag-immutable`
+(v* tags cannot be updated or deleted, no bypass). Secret scanning,
+push protection, and Dependabot security updates are enabled. npm
+publication stays deferred per D004; D010 supersedes only the
+"local until Wade returns" clause of D004's context.
+
+**Context.** Wade created and pushed the repository on 2026-08-16. The
+first CI run (31934962929) passed all three jobs on the exact pushed
+head; required-status contexts were configured from that run's job
+names. Automation identities (cyano-bot) are not in the release-manager
+team; every merge to main therefore goes through pull requests with the
+strict checks.
+
+**Rationale.** Same layered-integrity rationale as pi-norm-spec D014:
+integrity and quality have no bypass because history and evidence are
+non-negotiable; review has a narrow bypass for exact-candidate
+fast-forwards by release managers only. Reusing the org teams
+(norm-maintainers, norm-release-managers) keeps release authority
+uniform across the norm-spec family without sharing required checks.
+
+**Supersedes.** D004's "no GitHub remote until Wade returns" clause;
+D004's npm deferral stands unchanged.

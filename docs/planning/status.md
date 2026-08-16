@@ -4,7 +4,9 @@
 
 - Stage: local pre-release development of `0.1.0-alpha.1`. The repository was
   bootstrapped on 2026-08-15 by forking the verified pi-norm-spec bridge
-  (D001). No GitHub remote yet (D004); DSH host pinned to
+  (D001). Public at CyanoOrg/dsh-norm-spec (D010) with layered
+  main-integrity/main-quality/main-review rulesets, release-tag-immutable,
+  and CI (rust-quality/ts-quality/norm-validate) green; DSH host pinned to
   `@deepseek-ai/dsh@0.1.0-rc.6` from npm (GitHub master lags npm at rc.5;
   npm tarballs are the plugin-API authority).
 - Rust fork is complete and green: `dsh-norm-engine` + `dsh-norm-bridge`
@@ -38,7 +40,9 @@
      regression green with `inject: ["tools", "skills"]`.
   4. lib/ build pipeline: scripts/build-plugin-lib.sh added (commit
      1d08f67); formal packaging still deferred with D004.
-  5. .github CI workflows — deferred with GitHub remote (D004).
+  5. .github CI workflows: DONE 2026-08-16 — ci.yml (rust-quality,
+     ts-quality, norm-validate against the pinned upstream release) is
+     green and required by main-quality.
 - E2E verified 2026-08-15 (scripts/dsh-e2e-stub.mjs): real dsh 0.1.0-rc.6
   CLI, headless profile, bundle-patch plugin install (pnpm file:), stub
   SSE LLM asserting the `.norm` `<system-reminder>` arrives in the

@@ -21,7 +21,7 @@ intentionally hybrid:
 
 Version `0.1.0-alpha.1` pre-release development identity. The repository
 was bootstrapped 2026-08-15 by forking the verified pi-norm-spec bridge
-(D001). Local development only; no GitHub remote yet (D004). DSH host
+(D001). Public at CyanoOrg/dsh-norm-spec under D010 governance; DSH host
 pinned to `@deepseek-ai/dsh@0.1.0-rc.6`.
 
 Read first:
@@ -90,7 +90,7 @@ identity (D005).
 - Pin the Rust development toolchain and define MSRV before public alpha.
 - Declare compatible norm-spec product and machine protocol ranges
   explicitly.
-- npm publication is deferred per D004.
+- npm publication is deferred per D004; GitHub governance is set by D010.
 
 ## Rust rules
 
