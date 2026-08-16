@@ -15,6 +15,18 @@ repo="$(cd "$(dirname "$0")/.." && pwd)"
 target="${1:?usage: build-platform-candidate.sh <rust-target> <output-dir>}"
 output_dir="${2:?usage: build-platform-candidate.sh <rust-target> <output-dir>}"
 
+# Portable sha256: sha256sum (git-bash, linux) or shasum (macOS).
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    echo "sha256sum or shasum is required" >&2
+    return 1
+  fi
+}
+
 runtime="$repo/.local-runtime"
 upstream="$runtime/upstream"
 bridge="$repo/target/release/dsh-norm-bridge"
@@ -36,7 +48,7 @@ fi
 
 archive="$runtime/$asset"
 mkdir -p "$runtime" "$output_dir"
-if [[ -f "$archive" && "$(shasum -a 256 "$archive" | awk '{print $1}')" == "$expected_sha" ]]; then
+if [[ -f "$archive" && "$(sha256_of "$archive")" == "$expected_sha" ]]; then
   echo "==> cached archive verified: $asset"
 else
   echo "==> downloading $url"
@@ -45,7 +57,7 @@ else
     --connect-timeout 20 --max-time 180 --retry 4 --retry-all-errors \
     --retry-delay 2 --retry-max-time 180 \
     "$url" --output "$archive"
-  actual_sha="$(shasum -a 256 "$archive" | awk '{print $1}')"
+  actual_sha="$(sha256_of "$archive")"
   if [[ "$actual_sha" != "$expected_sha" ]]; then
     echo "error: downloaded archive checksum mismatch: $actual_sha != $expected_sha" >&2
     exit 1
