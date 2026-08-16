@@ -39,7 +39,8 @@
      both-invocable / provider runtime / body-from-package; dsh E2E
      regression green with `inject: ["tools", "skills"]`.
   4. lib/ build pipeline: scripts/build-plugin-lib.sh added (commit
-     1d08f67); formal packaging still deferred with D004.
+     1d08f67); formal packaging now active under D011 (scoped
+     five-package distribution, first public version 0.1.0-beta.1).
   5. .github CI workflows: DONE 2026-08-16 — ci.yml (rust-quality,
      ts-quality, norm-validate against the pinned upstream release) is
      green and required by main-quality.

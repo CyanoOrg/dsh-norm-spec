@@ -90,7 +90,8 @@ identity (D005).
 - Pin the Rust development toolchain and define MSRV before public alpha.
 - Declare compatible norm-spec product and machine protocol ranges
   explicitly.
-- npm publication is deferred per D004; GitHub governance is set by D010.
+- Distribution follows D011: five @cyanoorg packages, first public
+  version 0.1.0-beta.1, human-only publication.
 
 ## Rust rules
 
