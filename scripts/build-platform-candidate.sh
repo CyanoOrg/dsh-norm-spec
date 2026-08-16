@@ -24,7 +24,7 @@ if [[ ! -x "$bridge" ]]; then
   exit 1
 fi
 
-version="$(node -p "JSON.parse(require('node:fs').readFileSync('$repo/package.json', 'utf8')).version")"
+version="$(cd "$repo" && node -p "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version")"
 pin="$("$bridge" upstream-pin --target "$target")"
 asset="$(printf '%s\n' "$pin" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')"
 expected_sha="$(printf '%s\n' "$pin" | sed -n 's/.*"sha256":"\([0-9a-f]*\)".*/\1/p')"
