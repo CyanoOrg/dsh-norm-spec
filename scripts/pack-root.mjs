@@ -6,11 +6,12 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
-const repo = new URL("..", import.meta.url).pathname;
+const repo = fileURLToPath(new URL("..", import.meta.url));
 const outputDir = process.env.BUILD_OUTPUT ?? path.join(repo, "dist", "root");
 
-const { stageRootPackage } = await import(path.join(repo, "scripts", "package-staging.ts"));
+const { stageRootPackage } = await import(new URL("./package-staging.ts", import.meta.url).href);
 const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
 const repoPkg = JSON.parse(await readFile(path.join(repo, "package.json"), "utf8"));
 const version = repoPkg.version;
