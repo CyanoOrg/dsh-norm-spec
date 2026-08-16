@@ -241,3 +241,49 @@ uniform across the norm-spec family without sharing required checks.
 
 **Supersedes.** D004's "no GitHub remote until Wade returns" clause;
 D004's npm deferral stands unchanged.
+
+## D011 — Five-package @cyanoorg distribution under release-manager authority
+
+**Decision.** Public distribution uses the npm organization `cyanoorg`
+created by Wade on 2026-08-16, with a five-package topology mirroring
+pi-norm-spec D012 under one exact SemVer: root `@cyanoorg/dsh-norm-spec`
+(TS plugin lib, dsh Skill, cordis.patch.yml, root release manifest,
+docs, license) plus four exact-version native optional packages —
+`@cyanoorg/dsh-norm-spec-darwin-arm64`, `-darwin-x64`, `-linux-x64`,
+`-win32-x64` — each carrying the bridge binary and sealed norm-spec
+payload for one target. The root manifest pins all four via
+`optionalDependencies` with exact versions (no ranges). First public
+version is `0.1.0-beta.1`. Publication authority belongs to human
+release managers (`bravetwo`) executing local signed `npm publish`
+with 2FA; CI builds and retains candidates only and never holds npm
+credentials. The `DSH_NORM_BRIDGE`/`DSH_NORM_PAYLOAD` environment
+override remains available for development; packaged resolution
+resolves the native runtime inside the installed package tree with
+fail-loud verification of the sealed payload.
+
+**Context.** Wade decided on 2026-08-16 to stop waiting for a DSH
+stable tag (superseding D004's deferral trigger) and to unify family
+governance under an npm organization. All five scoped names were
+confirmed absent from the npm registry before this record; the
+`cyanoorg` organization exists with `bravetwo` as a member. DSH's
+plugin surface is pnpm-forwarding (`dsh plugin add` = `pnpm add` in
+the profile directory), so npm publication is the complete
+installation story: any user can `dsh plugin --profile <name> add
+@cyanoorg/dsh-norm-spec` once published. DSH host pin remains
+`@deepseek-ai/dsh@^0.1.0-rc.6` in peerDependencies.
+
+**Rationale.** One exact-version five-package set preserves the
+single-engine boundary (one bridge, one sealed payload per host) and
+the audit chain from source revision to installed bytes, proven by
+pi-norm-spec's Gate E rehearsal. Scoped names under `cyanoorg` put
+ownership and access control at the organization level — packages
+cannot be individually transferred or squatted — and align npm
+identity with the GitHub organization. Native optionalDependencies
+gives per-platform selection without making foreign platforms
+installation failures. Human-only publication keeps the release
+authority in the same hands the rulesets already trust.
+
+**Supersedes.** D004's "publication deferred until DSH ships a
+tagged stable-compatible release" clause; D004's rc.6 pin stands.
+pi-norm-spec is advised to mirror this scope decision in a D012
+amendment before its own publication.
