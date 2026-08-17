@@ -49,9 +49,14 @@ try {
   await writeFile(path.join(consumer, "package.json"), JSON.stringify({
     name: "dsh-norm-spec-staging-smoke", version: "0.0.0", private: true, type: "module",
   }, null, 2) + "\n");
-  const rootTarball = path.join(tarballs, "cyanoorg-dsh-norm-spec-0.1.0-alpha.1.tgz");
-  const nativeTarball = path.join(tarballs, "cyanoorg-dsh-norm-spec-darwin-arm64-0.1.0-alpha.1.tgz");
   const devDeps = JSON.parse(await readFile(path.join(repo, "package.json"), "utf8")).devDependencies;
+  // Tarball names follow the staged manifests (scoped names pack as
+  // `cyanoorg-<name>-<version>.tgz`); derive them from the staged versions
+  // instead of hardcoding, so version promotion cannot rot this script.
+  const rootVersion = JSON.parse(await readFile(path.join(root, "root", "package.json"), "utf8")).version;
+  const nativeVersion = JSON.parse(await readFile(path.join(root, "native", "package.json"), "utf8")).version;
+  const rootTarball = path.join(tarballs, `cyanoorg-dsh-norm-spec-${rootVersion}.tgz`);
+  const nativeTarball = path.join(tarballs, `cyanoorg-dsh-norm-spec-darwin-arm64-${nativeVersion}.tgz`);
   const peerArgs = Object.entries(devDeps)
     .filter(([name]) => name.startsWith("@deepseek-ai/"))
     .flatMap(([name, version]) => [`${name}@${version}`]);

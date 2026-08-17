@@ -84,7 +84,11 @@ export async function stageRootPackage(options: RootPackageStageOptions): Promis
   });
 
   // Packaged bundle patch: no launch config — the plugin resolves the native
-  // runtime from the installed package tree (runtime-resolver).
+  // runtime from the installed package tree (runtime-resolver). The entry name
+  // must be the scoped publish name: the dsh loader resolves `name` as an
+  // import specifier from the profile directory, so a bare name fails to
+  // resolve when the package is installed from the registry (P4 finding,
+  // beta.1 blocker).
   await writeFile(
     path.join(packageRoot, "cordis.patch.yml"),
     [
@@ -94,7 +98,7 @@ export async function stageRootPackage(options: RootPackageStageOptions): Promis
       "# environment variables are required.",
       "- insert:",
       "    - id: norm",
-      "      name: 'dsh-norm-spec'",
+      "      name: '@cyanoorg/dsh-norm-spec'",
       "",
     ].join("\n"),
     "utf8",
