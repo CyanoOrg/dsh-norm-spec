@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -28,7 +28,7 @@ jobs:
           mkdir -p dist/root
           node --experimental-strip-types scripts/pack-root.mjs
       - name: Upload root candidate
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: root-candidate
           path: dist/root/cyanoorg-dsh-norm-spec-*.tgz*
@@ -52,8 +52,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -68,7 +68,7 @@ jobs:
           mkdir -p dist/candidate
           bash scripts/build-platform-candidate.sh "${{ matrix.target }}" dist/candidate
       - name: Upload native candidate
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: candidate-${{ matrix.target }}
           path: dist/candidate/cyanoorg-dsh-norm-spec-*.tgz*
@@ -80,12 +80,12 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Download all candidates
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           pattern: "@(root-candidate|candidate-*)"
           merge-multiple: true
@@ -95,7 +95,7 @@ jobs:
           set -euo pipefail
           node --experimental-strip-types scripts/check-candidate-set.mjs
       - name: Upload the aggregate inventory
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: candidate-inventory
           path: dist/downloaded/inventory.json

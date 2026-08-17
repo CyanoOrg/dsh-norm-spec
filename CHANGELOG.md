@@ -33,6 +33,11 @@ loader-entry name, unblocking registry installs (P4 finding).
 
 - Version promoted 0.1.0-beta.1 -> 0.1.0-beta.2 across the workspace,
   npm manifests, and package candidates.
+- The full transitive `@deepseek-ai` peer closure (17 packages) is now
+  pinned to the DSH host rc.6 line in devDependencies: upstream
+  published `0.1.0-rc.7` during this promotion and floating
+  `^0.1.0-rc.6` peers started resolving into the rc.7 line, breaking
+  the staging smoke with ERESOLVE peer conflicts.
 
 ## [0.1.0-beta.1] - 2026-08-16
 

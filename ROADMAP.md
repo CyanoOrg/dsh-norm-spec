@@ -17,18 +17,22 @@
 - Local-only distribution story: `DSH_NORM_BRIDGE` + `DSH_NORM_PAYLOAD`
   environment resolution (no `PATH` fallback).
 
-### Beta
+### Beta — SHIPPED 2026-08-17 (0.1.0-beta.2)
 
 - Packaged distribution following pi-norm-spec D012: platform-optional npm
   packages bundling the sealed upstream payload and bridge binary.
+  Shipped as the five @cyanoorg packages (D011), beta.1 rehearsal
+  2026-08-16, beta.2 (registry-installable) 2026-08-17; P4 registry E2E
+  verified zero-modification against published beta.2.
 - Release manifests binding package version, source revision, and the exact
   upstream release asset.
-- Public repository + hosted CI (blocked on D004: waits for DSH
-  stable-compatible tagged release or demonstrated rc-to-rc API stability).
+- Public repository + hosted CI (unblocked by D011 superseding D004's
+  publication-deferral trigger; CI green and required by main-quality).
 
 ### Stable
 
-- npm publication of the root + platform packages.
+- npm publication of the root + platform packages (0.1.0 without `--tag`
+  so `latest` lands on stable; see docs/RELEASE-SOP.md).
 - Host Adapter SDK convergence with pi-norm-spec (extraction planned after
   this second adapter completes; see 2026-08-14 strategy discussion §7).
 - Enforcement reopened only under D006's prerequisites.

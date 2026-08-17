@@ -2,58 +2,39 @@
 
 ## Resume here
 
-- Stage: local pre-release development of `0.1.0-alpha.1`. The repository was
-  bootstrapped on 2026-08-15 by forking the verified pi-norm-spec bridge
-  (D001). Public at CyanoOrg/dsh-norm-spec (D010) with layered
-  main-integrity/main-quality/main-review rulesets, release-tag-immutable,
-  and CI (rust-quality/ts-quality/norm-validate) green; DSH host pinned to
-  `@deepseek-ai/dsh@0.1.0-rc.6` from npm (GitHub master lags npm at rc.5;
-  npm tarballs are the plugin-API authority).
-- Rust fork is complete and green: `dsh-norm-engine` + `dsh-norm-bridge`
-  build, clippy, and 16 tests pass under workspace lints after namespace
-  rename (including the assets-embedded `dsh-norm-spec/upstream-pin/v1`
-  fix caught by tests).
-- TypeScript plugin exists (`src/index.ts`, `src/bridge-client.ts` forked,
-  `src/validation-feedback.ts` adapted, `src/runtime-resolver.ts`,
-  `src/native-tools.ts`): applies `agent/session-start`/`agent/disposed`
-  bridge lifecycle, `agent/pre-step` durable `<system-reminder>` injection
-  with SHA-1 digest suppression (D002), `tools/post-execute` soft
-  validation feedback serialized FIFO per session, and
-  `norm_validate`/`norm_collect`/`norm_scan` native tools on `ctx.tools`.
-  `tools/result` tracks the active target from read/write/edit paths.
-- TypeScript suite green: bridge-client tests (5) against the ported
-  fake-bridge fixture; `npm test` = typecheck + tests. Fake-bridge modes
-  are `startup-failure`/`crash-after-ready` (not `startup-failed`/`crash`
-  — mismatch hangs the runner; that was diagnosed 2026-08-15).
+- Stage: post-beta.2. `0.1.0-beta.2` shipped 2026-08-17 (tag
+  `v0.1.0-beta.2`, five @cyanoorg packages on npm, `beta` dist-tag).
+  The beta.1 -> beta.2 arc: P4 registry E2E (clean `dsh plugin add`)
+  found the packaged bundle patch still declaring the bare loader-entry
+  name `dsh-norm-spec`, which made every registry install fail to boot;
+  fixed by #6 (staged patch emits the scoped name) and promoted by #7.
+  P4 re-verification against the published beta.2 passed with zero
+  modifications: registry install, plugin boot, bridge start, `.norm`
+  injection observed in the model-visible request, session completion.
+- Upstream drift incident (2026-08-17): `@deepseek-ai` published the
+  rc.7 line while beta.2 promotion was in flight; floating
+  `^0.1.0-rc.6` transitive peers resolved into rc.7 and broke the
+  staging smoke with ERESOLVE. devDependencies now pin the full
+  transitive peer closure (17 packages) at rc.6. Lesson: during any
+  promotion, re-run the staging smoke before publishing even if the
+  only change is a version bump.
+- `latest` dist-tag currently points at `0.1.0-beta.1` (registry
+  forces latest creation on a new package's first publish; we do not
+  fight it). The stable 0.1.0 release will be published WITHOUT
+  `--tag` so latest lands on the stable version naturally; beta
+  channel stays prerelease-only (`--tag beta`). Recorded in
+  `docs/RELEASE-SOP.md`.
 - Known open items, in order:
-  1. Single-slot replacement: DONE 2026-08-15 (commit 1d08f67) —
-     pre-step rescans the slot, changes shadow in place via surfaceOp
-     replace; E2E PASS (dsh-e2e-slot.mjs).
-  2. Post-edit validation E2E: DONE 2026-08-15 (commit 971c015) —
-     write tool result carries soft feedback, next model request sees
-     it; dual-channel assertion PASS (dsh-e2e-postedit.mjs).
-  3. Skill distribution: DONE 2026-08-16 (D009) — one dsh-specific
-     Skill (`skills/dsh-norm-spec/SKILL.md`) registered at runtime via
-     `ctx.skills.register` from the package file; rank 250, project
-     roots override, uninstall removes. Cordis smoke verifies listed /
-     both-invocable / provider runtime / body-from-package; dsh E2E
-     regression green with `inject: ["tools", "skills"]`.
-  4. lib/ build pipeline: scripts/build-plugin-lib.sh added (commit
-     1d08f67); formal packaging now active under D011 (scoped
-     five-package distribution, first public version 0.1.0-beta.1).
-  5. .github CI workflows: DONE 2026-08-16 — ci.yml (rust-quality,
-     ts-quality, norm-validate against the pinned upstream release) is
-     green and required by main-quality.
-- E2E verified 2026-08-15 (scripts/dsh-e2e-stub.mjs): real dsh 0.1.0-rc.6
-  CLI, headless profile, bundle-patch plugin install (pnpm file:), stub
-  SSE LLM asserting the `.norm` `<system-reminder>` arrives in the
-  model-visible turn. Bridge readiness race at pre-step was found and
-  fixed in that run (await startBridgeFor, per-session starting guard).
+  1. P3 (this branch): status/ROADMAP/CHANGELOG release records, stable
+     release SOP, CI actions v4 -> v5 hygiene.
+  2. 0.1.0 stable: re-run P4 against published 0.1.0, then finish with
+     a README pass.
 - Hard constraints active: never write custom session event types (D003);
-  no `PATH` fallback for the bridge (runtime-resolver env vars only until
-  packaging exists); enforcement subset empty (D006).
+  no `PATH` fallback for the bridge (packaged resolution is live since
+  D011; env override remains for development); enforcement subset empty
+  (D006).
 
-## Verification snapshot (2026-08-15)
+## Verification snapshot (2026-08-17, beta.2)
 
 | Gate | Command | Result |
 |---|---|---|
@@ -62,12 +43,10 @@
 | Rust tests | `cargo test --workspace --all-features` | 16 passed |
 | `.norm` | `norm validate .norm --strict` | OK, 0 errors |
 | TS typecheck | `npm run typecheck` | green |
-| TS tests | `npm test` (typecheck + 5 bridge tests) | green |
-| Cordis smoke | `scripts/cordis-smoke.mjs` | green (mount, tools, round-trips) |
-| dsh E2E (injection) | `scripts/dsh-e2e-stub.mjs` | green (injection reaches model request) |
-| dsh E2E (single-slot) | `scripts/dsh-e2e-slot.mjs` | green (one reminder, replaced on change) |
-| dsh E2E (post-edit) | `scripts/dsh-e2e-postedit.mjs` | green (soft feedback in log + next request) |
-| Cordis smoke (skills) | `scripts/cordis-smoke.mjs` | green (skill listed, both-invocable, runtime provider, body from package) |
+| TS tests | `npm test` (typecheck + tests incl. staging regression guards) | green |
+| Staging smoke | `scripts/check-staging-smoke.ts` (isolated consumer) | green |
+| CI (PR #7) | cross-platform x4, candidates, quality gates | 9/9 green |
+| P4 registry E2E | install beta.2 -> plugin boot -> injection -> session done | green, zero modifications |
 
 ## Decision index
 
@@ -76,5 +55,7 @@
   independent 0.1.0-alpha.1 line; D006 — empty enforcement; D007 — ambient
   bridge for agent-less tool calls; D008 — durable injection stays,
   single-slot replacement approved as the bounded-occupancy follow-up; D009 —
-  one dsh-specific Skill registered at runtime from the plugin package. See
+  one dsh-specific Skill registered at runtime from the plugin package;
+  D010 — public GitHub repository with layered main governance; D011 —
+  five-package @cyanoorg distribution under release-manager authority. See
   `docs/decisions.md`.
