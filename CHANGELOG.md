@@ -5,6 +5,35 @@ preparation.
 
 ## [Unreleased]
 
+## [0.1.0-beta.2] - 2026-08-17
+
+Packaging fix release: the packaged bundle patch now carries the scoped
+loader-entry name, unblocking registry installs (P4 finding).
+
+### Fixed
+
+- Packaged `cordis.patch.yml` emitted by `scripts/package-staging.ts`
+  referenced the plugin by the bare name `dsh-norm-spec`; the dsh loader
+  resolves loader-entry names as import specifiers from the profile
+  directory, so every registry install (`dsh plugin add
+  @cyanoorg/dsh-norm-spec`) failed to boot with "Cannot find package
+  'dsh-norm-spec'". The patch now emits the scoped publish name
+  `@cyanoorg/dsh-norm-spec`. The dev E2E (file: install) had masked the
+  mismatch via the profile-local bundle patch path.
+
+### Added
+
+- `tests/package-staging.test.ts`: pins the packaged-patch generator
+  output and asserts every `packages/*/package.json` manifest stays
+  scoped (regression guard for the D011 rename class).
+- `scripts/check-staging-smoke.ts` derives tarball names from the staged
+  manifests instead of the hardcoded `0.1.0-alpha.1`.
+
+### Changed
+
+- Version promoted 0.1.0-beta.1 -> 0.1.0-beta.2 across the workspace,
+  npm manifests, and package candidates.
+
 ## [0.1.0-beta.1] - 2026-08-16
 
 First public distribution rehearsal (D011): five @cyanoorg npm packages.
