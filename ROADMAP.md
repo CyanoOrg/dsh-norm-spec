@@ -31,8 +31,11 @@
 
 ### Stable
 
-- npm publication of the root + platform packages (0.1.0 without `--tag`
-  so `latest` lands on stable; see docs/RELEASE-SOP.md).
+- 0.1.0 promoted 2026-08-18 (version-only bump from beta.2; staging
+  smoke re-run green per the 2026-08-17 incident lesson). Remaining:
+  human publish without `--tag` so `latest` lands on stable (see
+  docs/RELEASE-SOP.md), P4 re-run against the published 0.1.0, and a
+  README pass.
 - Host Adapter SDK convergence with pi-norm-spec (extraction planned after
   this second adapter completes; see 2026-08-14 strategy discussion §7).
 - Enforcement reopened only under D006's prerequisites.

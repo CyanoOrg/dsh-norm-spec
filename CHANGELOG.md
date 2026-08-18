@@ -5,6 +5,21 @@ preparation.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-18
+
+First stable release of the dsh adapter.
+
+### Changed
+
+- Version promoted 0.1.0-beta.2 -> 0.1.0 across the Rust workspace,
+  npm manifests, and package candidates. No code changes since
+  0.1.0-beta.2; the packaging fix and the 17-package rc.6 peer-closure
+  pin from beta.2 carry over unchanged.
+- Stable publish executes without `--tag` so the `latest` dist-tag
+  moves from 0.1.0-beta.1 to 0.1.0 (the registry force-created
+  `latest` on the first publish; see docs/RELEASE-SOP.md). The
+  `beta` dist-tag remains on the prerelease line.
+
 ## [0.1.0-beta.2] - 2026-08-17
 
 Packaging fix release: the packaged bundle patch now carries the scoped

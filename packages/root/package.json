@@ -1,6 +1,6 @@
 {
   "name": "@cyanoorg/dsh-norm-spec",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0",
   "description": "Rust-backed DeepSeek Harness (dsh) Cordis plugin for norm-spec conventions",
   "license": "MIT",
   "author": "Wade <bravetwo@163.com>",
@@ -32,10 +32,10 @@
     "@deepseek-ai/dsh-skill": "^0.1.0-rc.6"
   },
   "optionalDependencies": {
-    "@cyanoorg/dsh-norm-spec-linux-x64": "0.1.0-beta.2",
-    "@cyanoorg/dsh-norm-spec-darwin-arm64": "0.1.0-beta.2",
-    "@cyanoorg/dsh-norm-spec-darwin-x64": "0.1.0-beta.2",
-    "@cyanoorg/dsh-norm-spec-win32-x64": "0.1.0-beta.2"
+    "@cyanoorg/dsh-norm-spec-linux-x64": "0.1.0",
+    "@cyanoorg/dsh-norm-spec-darwin-arm64": "0.1.0",
+    "@cyanoorg/dsh-norm-spec-darwin-x64": "0.1.0",
+    "@cyanoorg/dsh-norm-spec-win32-x64": "0.1.0"
   },
   "dsh": {
     "bundle": {

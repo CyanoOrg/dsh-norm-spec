@@ -2,33 +2,30 @@
 
 ## Resume here
 
-- Stage: post-beta.2. `0.1.0-beta.2` shipped 2026-08-17 (tag
-  `v0.1.0-beta.2`, five @cyanoorg packages on npm, `beta` dist-tag).
-  The beta.1 -> beta.2 arc: P4 registry E2E (clean `dsh plugin add`)
-  found the packaged bundle patch still declaring the bare loader-entry
-  name `dsh-norm-spec`, which made every registry install fail to boot;
-  fixed by #6 (staged patch emits the scoped name) and promoted by #7.
-  P4 re-verification against the published beta.2 passed with zero
-  modifications: registry install, plugin boot, bridge start, `.norm`
-  injection observed in the model-visible request, session completion.
-- Upstream drift incident (2026-08-17): `@deepseek-ai` published the
-  rc.7 line while beta.2 promotion was in flight; floating
-  `^0.1.0-rc.6` transitive peers resolved into rc.7 and broke the
-  staging smoke with ERESOLVE. devDependencies now pin the full
-  transitive peer closure (17 packages) at rc.6. Lesson: during any
-  promotion, re-run the staging smoke before publishing even if the
-  only change is a version bump.
+- Stage: 0.1.0 stable promotion (branch `chore/promote-0.1.0`).
+  The beta line is complete: beta.1 rehearsal (2026-08-16), beta.2
+  registry-installable fix (2026-08-17, #6/#7) with P4
+  zero-modification re-verification, and P3 release records + stable
+  release SOP + CI actions on the Node 24 line merged (#8, 2026-08-18).
+- This promotion is version-only: 0.1.0-beta.2 -> 0.1.0 across the
+  workspace, npm manifests, and package candidates; no code changes.
+  The 17-package rc.6 peer-closure pin from the 2026-08-17 upstream
+  drift incident carries over unchanged, and the staging smoke is
+  re-run on this branch per that incident's lesson (re-run it on every
+  promotion even when the only change is a version bump).
 - `latest` dist-tag currently points at `0.1.0-beta.1` (registry
   forces latest creation on a new package's first publish; we do not
-  fight it). The stable 0.1.0 release will be published WITHOUT
-  `--tag` so latest lands on the stable version naturally; beta
-  channel stays prerelease-only (`--tag beta`). Recorded in
-  `docs/RELEASE-SOP.md`.
+  fight it). Publishing 0.1.0 WITHOUT `--tag` moves latest onto the
+  stable version naturally; the beta channel stays prerelease-only.
+  Recorded in `docs/RELEASE-SOP.md`.
 - Known open items, in order:
-  1. P3 (this branch): status/ROADMAP/CHANGELOG release records, stable
-     release SOP, CI actions v4 -> v5 hygiene.
-  2. 0.1.0 stable: re-run P4 against published 0.1.0, then finish with
-     a README pass.
+  1. Merge this promotion, then human publish per
+     `docs/RELEASE-SOP.md` (four platform packages first, root last,
+     no `--tag`).
+  2. P4 registry E2E re-run against the published 0.1.0.
+  3. README pass (first public-facing readme for the 0.1.0 audience).
+  4. Wrap-up records: verification snapshot refresh and ROADMAP stable
+     milestone marked shipped.
 - Hard constraints active: never write custom session event types (D003);
   no `PATH` fallback for the bridge (packaged resolution is live since
   D011; env override remains for development); enforcement subset empty
@@ -47,6 +44,7 @@
 | Staging smoke | `scripts/check-staging-smoke.ts` (isolated consumer) | green |
 | CI (PR #7) | cross-platform x4, candidates, quality gates | 9/9 green |
 | P4 registry E2E | install beta.2 -> plugin boot -> injection -> session done | green, zero modifications |
+| 0.1.0 promotion | all local gates + staging smoke re-run | green (2026-08-18, this branch) |
 
 ## Decision index
 
