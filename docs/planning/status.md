@@ -2,36 +2,28 @@
 
 ## Resume here
 
-- Stage: 0.1.0 stable promotion (branch `chore/promote-0.1.0`).
-  The beta line is complete: beta.1 rehearsal (2026-08-16), beta.2
-  registry-installable fix (2026-08-17, #6/#7) with P4
-  zero-modification re-verification, and P3 release records + stable
-  release SOP + CI actions on the Node 24 line merged (#8, 2026-08-18).
-- This promotion is version-only: 0.1.0-beta.2 -> 0.1.0 across the
-  workspace, npm manifests, and package candidates; no code changes.
-  The 17-package rc.6 peer-closure pin from the 2026-08-17 upstream
-  drift incident carries over unchanged, and the staging smoke is
-  re-run on this branch per that incident's lesson (re-run it on every
-  promotion even when the only change is a version bump).
-- `latest` dist-tag currently points at `0.1.0-beta.1` (registry
-  forces latest creation on a new package's first publish; we do not
-  fight it). Publishing 0.1.0 WITHOUT `--tag` moves latest onto the
-  stable version naturally; the beta channel stays prerelease-only.
-  Recorded in `docs/RELEASE-SOP.md`.
+- Stage: **0.1.0 stable shipped** (2026-08-18). Full arc: promotion
+  PR #9 (CI 9/9, staging smoke re-run green) -> ff merge `276f0e7` ->
+  signed tag `v0.1.0` -> candidates run bound to the tag revision ->
+  human publish of the five @cyanoorg packages without `--tag` ->
+  `latest` landed on 0.1.0 across all five (verified via registry
+  `npm view`), `beta` stays at 0.1.0-beta.2 -> P4 registry E2E green
+  against the published 0.1.0 (fresh DSH_HOME, registry install, no
+  env overrides, injection observed in the model-visible request).
+  This wrap-up branch carries the public README pass.
 - Known open items, in order:
-  1. Merge this promotion, then human publish per
-     `docs/RELEASE-SOP.md` (four platform packages first, root last,
-     no `--tag`).
-  2. P4 registry E2E re-run against the published 0.1.0.
-  3. README pass (first public-facing readme for the 0.1.0 audience).
-  4. Wrap-up records: verification snapshot refresh and ROADMAP stable
-     milestone marked shipped.
+  1. Post-0.1.0 planning: Host Adapter SDK convergence with
+     pi-norm-spec (extraction waits on pi E3/E4).
+  2. CI hygiene minor: replace `upload-artifact@v5` (forced to Node 24
+     by the runner; deprecation warning in the release candidates run).
+  3. Upstream watch: DSH rc line drift (rc.7 exists; we stay pinned at
+     rc.6 per the peer-closure pin until a deliberate host bump).
 - Hard constraints active: never write custom session event types (D003);
   no `PATH` fallback for the bridge (packaged resolution is live since
   D011; env override remains for development); enforcement subset empty
   (D006).
 
-## Verification snapshot (2026-08-17, beta.2)
+## Verification snapshot (2026-08-18, 0.1.0)
 
 | Gate | Command | Result |
 |---|---|---|
@@ -42,9 +34,11 @@
 | TS typecheck | `npm run typecheck` | green |
 | TS tests | `npm test` (typecheck + tests incl. staging regression guards) | green |
 | Staging smoke | `scripts/check-staging-smoke.ts` (isolated consumer) | green |
-| CI (PR #7) | cross-platform x4, candidates, quality gates | 9/9 green |
-| P4 registry E2E | install beta.2 -> plugin boot -> injection -> session done | green, zero modifications |
-| 0.1.0 promotion | all local gates + staging smoke re-run | green (2026-08-18, this branch) |
+| CI (PR #9) | cross-platform x4, candidates, quality gates | 9/9 green |
+| 0.1.0 promotion | all local gates + staging smoke re-run | green (2026-08-18) |
+| Candidates (tag run) | sha256 x5 sidecar + inventory cross-check, scoped loader-entry name | green, revision `276f0e7` |
+| Publish | five packages, no `--tag` | done; `latest` -> 0.1.0 on all five |
+| P4 registry E2E | install 0.1.0 -> plugin boot -> injection -> session done | green, zero modifications |
 
 ## Decision index
 

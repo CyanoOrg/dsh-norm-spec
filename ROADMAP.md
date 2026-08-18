@@ -29,12 +29,12 @@
 - Public repository + hosted CI (unblocked by D011 superseding D004's
   publication-deferral trigger; CI green and required by main-quality).
 
-### Stable
+### Stable — SHIPPED 2026-08-18 (0.1.0)
 
-- 0.1.0 promoted 2026-08-18 (version-only bump from beta.2; staging
-  smoke re-run green per the 2026-08-17 incident lesson). Remaining:
-  human publish without `--tag` so `latest` lands on stable (see
-  docs/RELEASE-SOP.md), P4 re-run against the published 0.1.0, and a
+- Version-only promotion from beta.2 (staging smoke re-run green per
+  the 2026-08-17 incident lesson), signed tag `v0.1.0`, human publish
+  without `--tag` so `latest` landed on stable across all five
+  packages, P4 registry E2E green against the published 0.1.0, public
   README pass.
 - Host Adapter SDK convergence with pi-norm-spec (extraction planned after
   this second adapter completes; see 2026-08-14 strategy discussion §7).
