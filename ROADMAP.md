@@ -36,13 +36,27 @@
   without `--tag` so `latest` landed on stable across all five
   packages, P4 registry E2E green against the published 0.1.0, public
   README pass.
-- Host Adapter SDK convergence with pi-norm-spec (extraction planned after
-  this second adapter completes; see 2026-08-14 strategy discussion §7).
+
+## 0.2 — Bounded occupancy and adapter convergence
+
+- Single-slot convention injection (D008 approved direction): keep at
+  most one convention reminder on the session surface, superseding the
+  previous one when the collected conventions change — the model never
+  carries stale conventions and occupancy stays bounded across long
+  sessions with directory drift. Precondition: verify a plugin can emit
+  surface replace ops under strict `sourceEventSeqs` provenance; raise
+  an upstream helper request before implementation if the public API
+  requires one.
+- Host Adapter SDK convergence with pi-norm-spec: extraction after pi's
+  E3/E4 complete; this repository's 0.1.0 is the second-adapter
+  evidence the extraction was waiting for.
 - Enforcement reopened only under D006's prerequisites.
 
-## Beyond 0.1
+## Beyond
 
 - Track upstream Discussion #1584 (session event registration surface);
-  revisit D003 only if it ships.
+  revisit D003 only if it ships. An upstream ephemeral injection channel
+  would add a second delivery mode alongside the durable single-slot
+  (D008 watch item, rc.7+).
 - Watch the DSH plugin ecosystem (`dsh-plugin` topic) for injection-pattern
   evolution that D002 should track.
