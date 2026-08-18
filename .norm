@@ -7,11 +7,14 @@ metadata:
   description: dsh-norm-spec hybrid repository governance
 
 template:
-  required_files: [AGENTS.md, README.md, CHANGELOG.md, ROADMAP.md, Cargo.toml, package.json, SECURITY.md, CODE_OF_CONDUCT.md]
+  required_files: [AGENTS.md, README.md, README.zh-CN.md, CHANGELOG.md, ROADMAP.md, Cargo.toml, package.json, SECURITY.md, CODE_OF_CONDUCT.md]
   required_directories: [.github/, crates/, docs/, src/, scripts/, tests/]
   naming_convention:
     - "kebab-case for crate and planning directory names"
     - "kebab-case TypeScript source filenames"
+  readme_language_sync:
+    - "README.md is the authoritative document; README.zh-CN.md is its Simplified Chinese translation"
+    - "README.md and README.zh-CN.md are updated in the same commit, keeping section structure and technical content aligned"
   single_source_of_truth:
     - source: docs/ARCHITECTURE.md
       for: the Rust and TypeScript boundary
