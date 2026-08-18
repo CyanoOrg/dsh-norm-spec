@@ -11,6 +11,13 @@
   against the published 0.1.0 (fresh DSH_HOME, registry install, no
   env overrides, injection observed in the model-visible request).
   This wrap-up branch carries the public README pass.
+- Repository governance unified with the family (2026-08-18, D012):
+  four active layered rulesets all `bypass_mode: none`;
+  `main-quality` raised from three to nine strict required checks
+  (cross-platform x4 + both candidate jobs now merge-blocking); wikis
+  off; head branches never auto-deleted; `cyano-bot` back to Write
+  via `norm-automation` (admin removed, verified by readback and a
+  real push).
 - Known open items, in order:
   1. Post-0.1.0 planning: Host Adapter SDK convergence with
      pi-norm-spec (extraction waits on pi E3/E4).

@@ -287,3 +287,44 @@ authority in the same hands the rulesets already trust.
 tagged stable-compatible release" clause; D004's rc.6 pin stands.
 pi-norm-spec is advised to mirror this scope decision in a D012
 amendment before its own publication.
+
+## D012 — Family-uniform layered repository governance
+
+**Decision.** This repository's GitHub governance moves to the
+family-standard layered form shared with `norm-spec` and
+`pi-norm-spec`: four active rulesets — `main-integrity` (no
+deletion, no non-fast-forward, linear history, signed commits),
+`main-quality` (strict required checks), `main-review` (PR with one
+approval, stale dismissal, thread resolution), and
+`release-tag-immutable` (`refs/tags/v*` immutable) — every layer
+`bypass_mode: none`. `main-quality` now requires all nine checks
+(rust-quality, ts-quality, norm-validate, cross-platform x4,
+package-root-candidate, package-candidate-set) instead of the
+original three, so the ruleset gates the same cross-platform and
+candidate paths that produce npm artifacts. Repository settings
+align with the family: wikis off; head branches are never
+auto-deleted (explicit cleanup only, so future release or
+maintenance branches cannot be silently removed). `cyano-bot` holds
+no direct repository role; its effective access is Write through
+the `norm-automation` team, verified after admin removal by API
+readback and a real branch push.
+
+**Context.** After this repository's 0.1.0 stable release
+(2026-08-18), a family-wide governance audit found the three
+repositories had drifted: this repository was layered but required
+only three of its nine checks, `norm-spec` still ran a monolithic
+ruleset, and `pi-norm-spec` carried a disabled leftover set. The
+unification was executed in the Web UI the same day and verified by
+ruleset API readback on all three repositories. The family-wide
+record is `norm-spec` D018/D019; this record keeps the repository
+self-contained. The 0.1.0 exact promotion (approved candidate-head
+PR, all checks green, release-manager fast-forward) had already run
+under these rules, proving the loop needs no bypass.
+
+**Rationale.** Required checks now match release reality: every
+cross-platform and candidate path that produces a published artifact
+is merge-blocking, not merely observational. One uniform form across
+the family gives a single audit answer, one merge loop, and one
+release-promotion path. No-bypass everywhere is the narrowest
+enforceable shape; the verified promotion loop shows nothing wider
+is needed.
