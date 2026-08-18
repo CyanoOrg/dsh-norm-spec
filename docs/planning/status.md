@@ -53,7 +53,8 @@
   session events; D004 — rc.6 pin + local dev, publication deferred; D005 —
   independent 0.1.0-alpha.1 line; D006 — empty enforcement; D007 — ambient
   bridge for agent-less tool calls; D008 — durable injection stays,
-  single-slot replacement approved as the bounded-occupancy follow-up; D009 —
+  single-slot replacement implemented 2026-08-15 (`1d08f67`), step-level
+  E2E verified, shipped since 0.1.0-beta.1; D009 —
   one dsh-specific Skill registered at runtime from the plugin package;
   D010 — public GitHub repository with layered main governance; D011 —
   five-package @cyanoorg distribution under release-manager authority. See

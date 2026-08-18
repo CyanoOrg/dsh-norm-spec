@@ -60,6 +60,16 @@ First public distribution rehearsal (D011): five @cyanoorg npm packages.
 
 ### Added
 
+- Single-slot convention replacement via session surface replace
+  (implemented 2026-08-15, first published in this version): the
+  convention reminder occupies at most one surface message, superseded
+  in place through a `surfaceOp` replace with `sourceEventSeqs`
+  provenance when collected conventions change; step-level E2E
+  (`scripts/dsh-e2e-slot.mjs`) verified replacement — exactly one
+  reminder carrying the revised text — against the real host.
+  (Backfilled 2026-08-18: the feature shipped in every published
+  version but had no changelog entry.)
+
 - D010 governance: public repository, layered branch protection, strict CI
   (rust-quality, ts-quality, norm-validate), linear signed history.
 - D011 distribution decision: five `@cyanoorg/dsh-norm-spec*` packages

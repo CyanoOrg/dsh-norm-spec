@@ -8,7 +8,11 @@
 - Rust engine + bridge forked from pi-norm-spec with the dsh-norm-spec
   namespace (done 2026-08-15, 16 tests green).
 - Thin TypeScript Cordis plugin: bridge lifecycle, pre-step convention
-  injection, post-edit validation feedback (in progress).
+  injection, post-edit validation feedback (done 2026-08-15).
+- Single-slot convention replacement via session surface replace
+  (D008, done 2026-08-15): at most one convention reminder on the
+  surface, superseded in place when collected conventions change;
+  step-level E2E verified replacement against the real host.
 - Native tools `norm_validate` / `norm_collect` / `norm_scan`.
 - TS test suite with a fake-bridge fixture.
 - Real DSH rc.6 host verification: plugin loads from `cordis.yml`, one
@@ -37,20 +41,17 @@
   packages, P4 registry E2E green against the published 0.1.0, public
   README pass.
 
-## 0.2 — Bounded occupancy and adapter convergence
+## 0.2 — Adapter convergence and enforcement prerequisites
 
-- Single-slot convention injection (D008 approved direction): keep at
-  most one convention reminder on the session surface, superseding the
-  previous one when the collected conventions change — the model never
-  carries stale conventions and occupancy stays bounded across long
-  sessions with directory drift. Precondition: verify a plugin can emit
-  surface replace ops under strict `sourceEventSeqs` provenance; raise
-  an upstream helper request before implementation if the public API
-  requires one.
 - Host Adapter SDK convergence with pi-norm-spec: extraction after pi's
   E3/E4 complete; this repository's 0.1.0 is the second-adapter
   evidence the extraction was waiting for.
 - Enforcement reopened only under D006's prerequisites.
+
+Note: single-slot convention replacement — the bounded-occupancy
+follow-up approved in D008 — was implemented and verified on
+2026-08-15 and has shipped in every published version since
+`0.1.0-beta.1`; it is recorded under Alpha above, not scheduled here.
 
 ## Beyond
 
