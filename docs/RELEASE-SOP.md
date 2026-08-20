@@ -63,11 +63,17 @@ intentionally left in place through beta.2 (2026-08-17).
      flag.
    - npm may hang at "Publishing to …" waiting for an OTP that doesn't
      render; pass `--otp=<code>` explicitly if needed.
-10. Post-publish verification (P4): fresh `dsh plugin add
-    @cyanoorg/dsh-norm-spec@<exact-version-or-tag>` in a clean DSH_HOME,
-    then the stub-LLM E2E asserting injection reaches the model-visible
-    request. Zero modifications expected.
-11. Update status.md verification snapshot; note the release in
+10. Post-publish verification (P4): fresh `dsh plugin --profile web
+    add @cyanoorg/dsh-norm-spec@<exact-version-or-tag>` in a clean
+    DSH_HOME, then the stub-LLM E2E asserting injection reaches the
+    model-visible request. Zero modifications expected.
+11. Create the GitHub Release for `v<version>` with that version's
+    CHANGELOG section as the notes (plus the install command and npm
+    package links). Mark `prerelease` for alpha/beta/rc; a stable
+    release becomes the repo's "Latest". The tag already exists
+    (step 6) — the release only attaches notes. Backfill any missing
+    prior tags in the same sitting.
+12. Update status.md verification snapshot; note the release in
     ROADMAP.
 
 ## Known npm quirks (observed 2026-08-17)
