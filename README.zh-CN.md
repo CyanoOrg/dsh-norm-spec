@@ -30,8 +30,12 @@ digest）、收集到的约定变化时**通过单一槽位原地取代**（`sur
 ## 安装
 
 ```bash
-dsh plugin add @cyanoorg/dsh-norm-spec --profile <name>
+dsh plugin --profile web add @cyanoorg/dsh-norm-spec
 ```
+
+DSH 按 profile 安装插件，没有全局安装一说。`web` 与 `headless`
+两个 profile 首次使用时从内置模板自动初始化——换成你实际启动的
+profile（`dsh --profile <name>`）即可。
 
 就这样：包内携带密封的 upstream norm-spec payload 与原生 bridge，
 运行时从安装树内解析——不查 PATH、不需要环境变量。平台二进制通过

@@ -36,8 +36,12 @@ DSH host supported: `@deepseek-ai/dsh@0.1.0-rc.6`.**
 ## Install
 
 ```bash
-dsh plugin add @cyanoorg/dsh-norm-spec --profile <name>
+dsh plugin --profile web add @cyanoorg/dsh-norm-spec
 ```
+
+DSH installs plugins per profile; there is no global install. The `web`
+and `headless` profiles initialize from shipped templates on first use —
+substitute whichever profile you boot (`dsh --profile <name>`).
 
 That is all: the package ships a sealed upstream norm-spec payload and a
 native bridge, resolved at runtime from the installed tree — no PATH
