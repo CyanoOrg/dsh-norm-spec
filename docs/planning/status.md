@@ -57,6 +57,11 @@
   the real rc.6 agent loop. Gates green: fmt/clippy/test (29) +
   typecheck/test (33). Target-context plan workstreams complete; branch
   `fix/target-context` ready for review/PR.
+- 0.2.0 promotion in progress (2026-09-03, branch
+  `chore/promote-0.2.0`): workspace + six npm manifests at 0.2.0,
+  intra-workspace bridge dependency raised to `0.2.0` (was
+  `0.1.0-alpha.1`), CHANGELOG promoted, ROADMAP 0.2 noted. Staging smoke
+  re-run required by the SOP before merge.
 - Known open items, in order:
   1. Post-0.1.0 planning: Host Adapter SDK convergence with
      pi-norm-spec (extraction waits on pi E3/E4).

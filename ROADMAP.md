@@ -48,6 +48,11 @@
   evidence the extraction was waiting for.
 - Enforcement reopened only under D006's prerequisites.
 
+Shipped in 0.2.0 (2026-09-03): directory-scoped convention paging
+restored (D013), bridge scan and layout-index surfaces (D014/D015), and
+bounded multi-target context (D016). Enforcement prerequisites are
+unchanged.
+
 Note: single-slot convention replacement — the bounded-occupancy
 follow-up approved in D008 — was implemented and verified on
 2026-08-15 and has shipped in every published version since
