@@ -29,6 +29,17 @@ test("ready identity, request correlation, and graceful shutdown", async () => {
   assert.equal(client.getStatus().state, "stopped");
 });
 
+test("scan returns the project coverage response", async () => {
+  const client = await launch("ready");
+  const scan = (await client.request<unknown>("scan", { root: "." })) as {
+    apiVersion: string;
+    directories: Array<{ path: string; has_norm: boolean }>;
+  };
+  assert.equal(scan.apiVersion, "norm-spec/scan/v1");
+  assert.ok(scan.directories.some((entry) => entry.path === "crates/engine" && entry.has_norm));
+  await client.shutdown();
+});
+
 test("startupFailed rejects initialization without fallback", async () => {
   await assert.rejects(launch("startup-failure"), BridgeClientError);
 });

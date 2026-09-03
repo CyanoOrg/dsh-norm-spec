@@ -97,6 +97,12 @@ struct ValidateParams {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ScanParams {
+    root: PathBuf,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CancelParams {
     request_id: String,
 }
@@ -243,6 +249,7 @@ impl SessionState<'_> {
             "collect" => self.handle_collect(request),
             "promptContext" => self.handle_prompt_context(request),
             "validate" => self.handle_validate(request),
+            "scan" => self.handle_scan(request),
             "cancel" => self.handle_cancel(&request),
             "shutdown" => self.handle_shutdown(request),
             _ => {
@@ -342,6 +349,33 @@ impl SessionState<'_> {
         };
         let cancellation = CancellationToken::default();
         spawn_validate(
+            self.runtime.clone(),
+            request.id.clone(),
+            params,
+            cancellation.clone(),
+            self.events.clone(),
+        );
+        self.active = Some(ActiveRequest {
+            id: request.id,
+            cancellation,
+        });
+        Ok(LoopControl::Continue)
+    }
+
+    fn handle_scan(&mut self, request: RequestFrame) -> Result<LoopControl, UpstreamError> {
+        if self.active.is_some() {
+            send_busy(self.output, &request.id)?;
+            return Ok(LoopControl::Continue);
+        }
+        let params: ScanParams = match request_params(&request) {
+            Ok(params) => params,
+            Err(error) => {
+                send_error(self.output, &request.id, &error)?;
+                return Ok(LoopControl::Continue);
+            }
+        };
+        let cancellation = CancellationToken::default();
+        spawn_scan(
             self.runtime.clone(),
             request.id.clone(),
             params,
@@ -490,6 +524,21 @@ fn spawn_validate(
     thread::spawn(move || {
         let result = runtime
             .validate_all_initialized(&params.root, &cancellation)
+            .and_then(to_value);
+        let _ = events.send(InputEvent::OperationFinished { id, result });
+    });
+}
+
+fn spawn_scan(
+    runtime: UpstreamRuntime,
+    id: String,
+    params: ScanParams,
+    cancellation: CancellationToken,
+    events: SyncSender<InputEvent>,
+) {
+    thread::spawn(move || {
+        let result = runtime
+            .scan_initialized(&params.root, &cancellation)
             .and_then(to_value);
         let _ = events.send(InputEvent::OperationFinished { id, result });
     });
@@ -809,8 +858,8 @@ mod tests {
     use std::{collections::HashSet, io::Cursor};
 
     use super::{
-        BRIDGE_API_VERSION, CollectParams, MAX_FRAME_BYTES, PromptContextParams, decode_request,
-        read_input_frame, request_params,
+        BRIDGE_API_VERSION, CollectParams, MAX_FRAME_BYTES, PromptContextParams, ScanParams,
+        decode_request, read_input_frame, request_params,
     };
 
     #[test]
@@ -874,6 +923,20 @@ mod tests {
         let request = decode_request(&frame, &mut seen)?;
         let Err(error) = request_params::<PromptContextParams>(&request) else {
             return Err("promptContext unexpectedly accepted a missing target".into());
+        };
+        assert_eq!(error.code(), "dsh-norm-spec/bridge/params-invalid");
+        Ok(())
+    }
+
+    #[test]
+    fn scan_params_require_root() -> Result<(), Box<dyn std::error::Error>> {
+        let mut seen = HashSet::new();
+        let frame = format!(
+            r#"{{"apiVersion":"{BRIDGE_API_VERSION}","type":"request","id":"r-scan","method":"scan","params":{{}}}}"#
+        );
+        let request = decode_request(&frame, &mut seen)?;
+        let Err(error) = request_params::<ScanParams>(&request) else {
+            return Err("scan unexpectedly accepted a missing root".into());
         };
         assert_eq!(error.code(), "dsh-norm-spec/bridge/params-invalid");
         Ok(())

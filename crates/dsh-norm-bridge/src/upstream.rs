@@ -9,9 +9,10 @@ use std::{
 
 use dsh_norm_engine::{
     NORM_COLLECT_API, NORM_CONFORMANCE_API, NORM_CONTRACT_BUNDLE_API, NORM_ERROR_API,
-    NORM_VALIDATE_API, NormCollectResponse, NormCompatibility, NormConformanceReport,
-    NormErrorResponse, NormValidateResponse, RELEASE_ARTIFACT_API, UPSTREAM_CHECKSUM_FILE,
-    UPSTREAM_PIN_API, UpstreamAssetPin, UpstreamPin, native_rust_target,
+    NORM_SCAN_API, NORM_VALIDATE_API, NormCollectResponse, NormCompatibility,
+    NormConformanceReport, NormErrorResponse, NormScanResponse, NormValidateResponse,
+    RELEASE_ARTIFACT_API, UPSTREAM_CHECKSUM_FILE, UPSTREAM_PIN_API, UpstreamAssetPin, UpstreamPin,
+    native_rust_target,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use sha2::{Digest, Sha256};
@@ -578,6 +579,48 @@ impl UpstreamRuntime {
             return Err(protocol_mismatch("validate", &response.api_version).into());
         }
         Ok(response)
+    }
+
+    pub(crate) fn scan_initialized(
+        &self,
+        project_root: &Path,
+        cancellation: &CancellationToken,
+    ) -> Result<NormScanResponse, UpstreamOperationError> {
+        let root = canonical_project_root(project_root)?;
+        let mut command = Command::new(self.payload.norm_executable());
+        command.args(["scan", "--root", "."]).current_dir(&root);
+        let output = match run_cancellable(&mut command, "scan", cancellation)? {
+            ProcessOutcome::Completed(output) => output,
+            ProcessOutcome::Cancelled => return Err(UpstreamOperationError::Cancelled),
+        };
+        require_bounded_output(&output, "scan")?;
+        if !output.status.success() {
+            return Err(upstream_command_error("scan", &output).into());
+        }
+        require_empty_stderr(&output, "scan")?;
+        let response: NormScanResponse = parse_stdout(&output, "scan")?;
+        if response.api_version != NORM_SCAN_API {
+            return Err(protocol_mismatch("scan", &response.api_version).into());
+        }
+        Ok(response)
+    }
+
+    /// Structurally scan the project through the pinned upstream engine.
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable error for an incompatible runtime, invalid project
+    /// root, upstream command failure, or non-scan response.
+    pub fn scan(&self, project_root: impl AsRef<Path>) -> Result<NormScanResponse, UpstreamError> {
+        self.handshake()?;
+        match self.scan_initialized(project_root.as_ref(), &CancellationToken::default()) {
+            Ok(response) => Ok(response),
+            Err(UpstreamOperationError::Failed(error)) => Err(error),
+            Err(UpstreamOperationError::Cancelled) => Err(UpstreamError::new(
+                "dsh-norm-spec/upstream/cancelled",
+                "norm-spec scan was cancelled",
+            )),
+        }
     }
 }
 

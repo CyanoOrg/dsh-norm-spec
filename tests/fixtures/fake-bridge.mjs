@@ -193,6 +193,27 @@ if (mode === "startup-failure") {
       process.exit(17);
     } else if (request.method === "collect") {
       active = request.id;
+    } else if (request.method === "scan") {
+      emit({
+        apiVersion,
+        type: "response",
+        id: request.id,
+        status: "ok",
+        result: {
+          apiVersion: "norm-spec/scan/v1",
+          root: ".",
+          directory_count: 3,
+          directories: [
+            { path: ".", depth: 0, file_count: 4, has_norm: true },
+            { path: "crates", depth: 1, file_count: 0, has_norm: false },
+            { path: "crates/engine", depth: 2, file_count: 2, has_norm: true },
+          ],
+          symlinks: [],
+          naming: { directories: {}, files: {} },
+          recurring_filenames: [],
+          norm_coverage: { total_dirs: 3, dirs_with_norm: 2, ratio: 0.667 },
+        },
+      });
     } else if (request.method === "cancel") {
       emit({
         apiVersion,

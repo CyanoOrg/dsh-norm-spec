@@ -1,5 +1,7 @@
 //! Typed consumer models for norm-spec machine responses.
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -154,6 +156,110 @@ pub struct NormValidateResponse {
     pub summary: NormValidationSummary,
 }
 
+/// One traversed directory summarized by a norm-spec scan.
+///
+/// The `norm-spec/scan/v1` wire format spells multi-word fields in
+/// `snake_case` (D014), so this mirror carries no camelCase rename.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct NormScannedDirectory {
+    /// Path relative to the scan root.
+    pub path: String,
+    /// Number of path components below the scan root.
+    pub depth: usize,
+    /// Number of visible regular files, excluding `.norm` and other dotfiles.
+    pub file_count: usize,
+    /// Whether the directory contains a regular `.norm` file.
+    pub has_norm: bool,
+}
+
+/// Kind of symbolic link observed without traversal.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NormScanSymlinkKind {
+    /// Link target is a directory.
+    Directory,
+    /// Link target is a regular file.
+    File,
+    /// Link target is unavailable or another filesystem object.
+    Other,
+}
+
+/// Action taken for an observed symbolic link.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NormScanSymlinkAction {
+    /// The scanner reported the link without following it.
+    NotFollowed,
+}
+
+/// Portable symbolic-link observation in a norm-spec scan response.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct NormScanSymlink {
+    /// Path relative to the scan root.
+    pub path: String,
+    /// Observed target kind.
+    pub kind: NormScanSymlinkKind,
+    /// Explicit no-follow action.
+    pub action: NormScanSymlinkAction,
+}
+
+/// Naming-style counts collected from directories and visible files.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct NormScanNaming {
+    /// Counts for non-root directories, including untraversed directory links.
+    pub directories: BTreeMap<String, usize>,
+    /// Counts for visible regular filenames.
+    pub files: BTreeMap<String, usize>,
+}
+
+/// Filename found in two or more traversed directories.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct NormScanRecurringFilename {
+    /// Exact filename including its extension.
+    pub name: String,
+    /// Number of distinct directories containing the filename.
+    pub dir_count: usize,
+}
+
+/// Aggregate `.norm` coverage across traversed directories.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct NormScanCoverage {
+    /// Total traversed directories, including the root.
+    pub total_dirs: usize,
+    /// Traversed directories containing a regular `.norm` file.
+    pub dirs_with_norm: usize,
+    /// Coverage ratio rounded to three decimal places.
+    pub ratio: f64,
+}
+
+/// Completed norm-spec structural-scan response.
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct NormScanResponse {
+    /// Scan response protocol.
+    #[serde(rename = "apiVersion")]
+    pub api_version: String,
+    /// Root marker for every portable path in the response.
+    pub root: String,
+    /// Number of traversed directories.
+    pub directory_count: usize,
+    /// Traversed directories ordered by portable path.
+    pub directories: Vec<NormScannedDirectory>,
+    /// Untraversed symbolic links ordered by portable path.
+    pub symlinks: Vec<NormScanSymlink>,
+    /// Deterministic naming-style counts.
+    pub naming: NormScanNaming,
+    /// Recurring filenames ordered by count descending and name ascending.
+    pub recurring_filenames: Vec<NormScanRecurringFilename>,
+    /// Aggregate convention-file coverage.
+    pub norm_coverage: NormScanCoverage,
+}
+
 /// Stable detail carried by a norm-spec error response.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -262,4 +368,58 @@ pub struct NormConformanceReport {
     pub issues: Vec<NormConformanceIssue>,
     /// Failed case details.
     pub failures: Vec<NormConformanceFailure>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::NormScanResponse;
+
+    #[test]
+    fn scan_response_parses_the_snake_case_wire_format() {
+        let raw = r#"{
+            "apiVersion": "norm-spec/scan/v1",
+            "root": ".",
+            "directory_count": 2,
+            "directories": [
+                {"path": ".", "depth": 0, "file_count": 1, "has_norm": true},
+                {"path": "docs", "depth": 1, "file_count": 0, "has_norm": false}
+            ],
+            "symlinks": [
+                {"path": "link", "kind": "directory", "action": "not-followed"}
+            ],
+            "naming": {"directories": {"kebab-case": 1}, "files": {"README.md": 1}},
+            "recurring_filenames": [{"name": "main.rs", "dir_count": 2}],
+            "norm_coverage": {"total_dirs": 2, "dirs_with_norm": 1, "ratio": 0.5}
+        }"#;
+        let response: NormScanResponse = serde_json::from_str(raw)
+            .unwrap_or_else(|error| panic!("scan response should parse: {error}"));
+        assert_eq!(response.api_version, "norm-spec/scan/v1");
+        assert_eq!(response.root, ".");
+        assert_eq!(response.directory_count, 2);
+        assert!(response.directories[0].has_norm);
+        assert_eq!(
+            response.symlinks[0].kind,
+            super::NormScanSymlinkKind::Directory
+        );
+        assert_eq!(
+            response.symlinks[0].action,
+            super::NormScanSymlinkAction::NotFollowed
+        );
+        assert_eq!(response.norm_coverage.dirs_with_norm, 1);
+    }
+
+    #[test]
+    fn scan_response_rejects_camel_case_drift() {
+        let raw = r#"{
+            "apiVersion": "norm-spec/scan/v1",
+            "root": ".",
+            "directoryCount": 1,
+            "directories": [],
+            "symlinks": [],
+            "naming": {"directories": {}, "files": {}},
+            "recurringFilenames": [],
+            "norm_coverage": {"totalDirs": 0, "dirs_with_norm": 0, "ratio": 0.0}
+        }"#;
+        assert!(serde_json::from_str::<NormScanResponse>(raw).is_err());
+    }
 }

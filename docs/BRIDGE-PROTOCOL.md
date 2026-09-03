@@ -46,6 +46,7 @@ Supported methods:
 | `collect` | `root`, `target` | Run the verified upstream collect protocol. |
 | `promptContext` | `root`, `target` | Collect and render `dsh-norm-spec/prompt-context/v1` for DSH injection. |
 | `validate` | `root` | Run strict upstream validation for all `.norm` files. |
+| `scan` | `root` | Run the verified upstream structural scan (`norm-spec/scan/v1`); added by D014. |
 | `cancel` | `requestId` | Cancel exactly one active semantic request. |
 | `shutdown` | none | Cancel active work if needed, acknowledge, then exit zero. |
 

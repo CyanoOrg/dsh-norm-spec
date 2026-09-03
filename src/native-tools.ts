@@ -48,10 +48,37 @@ interface ScanValue {
   conventionPaths: string[];
 }
 
-interface ScanValue {
-  ok: boolean;
-  error: string | null;
-  report: string;
+/** Typed view of the `norm-spec/scan/v1` response (snake_case wire fields). */
+interface NormScanResponse {
+  apiVersion: string;
+  root: string;
+  directory_count: number;
+  directories: Array<{ path: string; has_norm: boolean }>;
+}
+
+const NORM_SCAN_API = "norm-spec/scan/v1";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseScanResponse(value: unknown): NormScanResponse {
+  if (
+    !isRecord(value) ||
+    value.apiVersion !== NORM_SCAN_API ||
+    typeof value.root !== "string" ||
+    typeof value.directory_count !== "number" ||
+    !Array.isArray(value.directories) ||
+    !value.directories.every(
+      (entry) => isRecord(entry) && typeof entry.path === "string" && typeof entry.has_norm === "boolean",
+    )
+  ) {
+    throw new BridgeClientError(
+      "dsh-norm-spec/client/scan-invalid",
+      "bridge scan result had an unexpected schema",
+    );
+  }
+  return value as unknown as NormScanResponse;
 }
 
 function sessionRoot(exec: ToolRunContext): string {
@@ -237,21 +264,24 @@ export function normScanTool(resolve: ClientResolver): ToolDefinition {
       try {
         return await withClient(resolve, exec, async (client) => {
           const raw = await client.request<unknown>(
-            "collect",
-            { root: sessionRoot(exec), target: sessionRoot(exec) },
+            "scan",
+            { root: sessionRoot(exec) },
             exec.signal,
           );
-          const paths = Array.isArray((raw as { conventionPaths?: unknown })?.conventionPaths)
-            ? ((raw as { conventionPaths: string[] }).conventionPaths)
-            : [];
+          const response = parseScanResponse(raw);
+          const declaring = response.directories.filter((entry) => entry.has_norm);
+          const conventionPaths = declaring.map((entry) =>
+            entry.path === "." ? ".norm" : `${entry.path}/.norm`,
+          );
           const report = renderText([
             `norm scan @ ${sessionRoot(exec)}`,
-            paths.length === 0
+            declaring.length === 0
               ? "No .norm conventions found."
-              : `${paths.length} convention file(s):`,
-            ...paths.map((p) => `- ${p}`),
+              : `${declaring.length} director${declaring.length === 1 ? "y" : "ies"} declare .norm conventions:`,
+            ...declaring.map((entry) => `- ${entry.path}`),
+            `Coverage: ${declaring.length} of ${response.directory_count} directories.`,
           ]);
-          return { ok: true, error: null, report, conventionPaths: paths };
+          return { ok: true, error: null, report, conventionPaths };
         });
       } catch (error) {
         const base = toolError(error);
