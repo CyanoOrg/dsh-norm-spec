@@ -15,13 +15,21 @@ validator.
 - At each agent step, dsh-norm-spec recollects conventions for the active
   target through a persistent verified Rust bridge started per agent
   session.
+- A system-prompt layout index maps every directory that declares `.norm`
+  conventions (with its `metadata.description`). It refreshes after `.norm`
+  edits; editing a convention file updates the map on the next step.
 - Conventions are injected as a single durable `<system-reminder>` user
   message. When conventions change, the previous reminder is replaced in
   place on the session surface: occupancy stays bounded at one message,
   and superseded versions are no longer model-visible.
-- The active target follows successful `read`/`edit` (file) and `write`
-  (directory) tool calls. Shell commands and custom-tool fields are not
-  guessed for paths.
+- The active target follows successful `read`/`edit`/`write` tool calls
+  and resolves to the touched file's parent directory (D013). Shell
+  commands and custom-tool fields are not guessed for paths.
+- Before working in an unfamiliar directory, run `norm_collect` on it —
+  conventions for a directory reach the context on the step after the
+  first tool call there, and the layout index (or `norm_scan`) shows
+  which directories declare conventions. Collecting first keeps the
+  directory's own rules in context from the first action.
 - A successful `write` or `edit` triggers strict whole-project `.norm`
   validation. Findings are appended to that completed tool result as
   bounded soft feedback, serialized first-in-first-out per session.

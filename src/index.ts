@@ -10,7 +10,10 @@
  *
  * @module dsh-norm-spec
  */
+import { relative } from "node:path";
+
 import type { Context } from "@deepseek-ai/cordis";
+import type { } from "@deepseek-ai/dsh-system-prompt";
 import type { Agent, PreStepDecision } from "@deepseek-ai/dsh-agent";
 import type { Session } from "@deepseek-ai/dsh-session";
 import type { PostToolDecision, ToolExecution, ToolExecutionResult } from "@deepseek-ai/dsh-tools";
@@ -36,6 +39,7 @@ import {
   shouldValidateAfterTool,
 } from "./validation-feedback.ts";
 import { loadSkillRegistration } from "./skill-registration.ts";
+import { parseLayoutIndex } from "./layout-index.ts";
 import { projectConventionTarget } from "./target-tracking.ts";
 
 const PLUGIN_NAME = "dsh-norm-spec";
@@ -45,8 +49,13 @@ const SOURCE_KIND = "dsh-norm-spec-context";
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = "dsh-norm-spec";
-/** Services required by this plugin (tool registration, skill registry). */
-export const inject = ["tools", "skills"];
+/** Services required by this plugin (tool registration, skill registry, prompt section). */
+export const inject = ["tools", "skills", "systemPrompt"];
+
+/** Registry name of the adapter's system-prompt layout-index section (D015). */
+export const LAYOUT_SECTION_NAME = "dsh-norm-spec:layout-index";
+/** Tool-guidance band (100–199) so the map renders after tool docs. */
+export const LAYOUT_SECTION_ORDER = 150;
 
 export interface Config {
   /** Explicit launch for the bundled bridge; defaults to the packaged runtime. */
@@ -71,6 +80,9 @@ interface SessionState {
   validationTail: Promise<void>;
   disposed: boolean;
   starting: Promise<void> | undefined;
+  layoutIndexDigest: string | undefined;
+  layoutIndexStale: boolean;
+  visitedTargets: Set<string>;
 }
 
 /**
@@ -80,6 +92,11 @@ interface SessionState {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function apply(ctx: Context, config: Config = {}): void {
   const sessions = new WeakMap<object, SessionState>();
+
+  // Plugin-level layout-index state (D015): one global section reflecting the
+  // most recently refreshed project layout; providers re-read it each assembly.
+  let layoutSectionText = "";
+  let layoutEntryPaths = new Set<string>();
 
   // Plugin-level fallback bridge for agent-less tool calls (Code Mode,
   // harnesses, direct registry consumers). Agent sessions keep their own
@@ -101,6 +118,9 @@ export function apply(ctx: Context, config: Config = {}): void {
         validationTail: Promise.resolve(),
         disposed: false,
         starting: undefined,
+        layoutIndexDigest: undefined,
+        layoutIndexStale: false,
+        visitedTargets: new Set(["."]),
       };
       sessions.set(agent.session, state);
     }
@@ -152,6 +172,9 @@ export function apply(ctx: Context, config: Config = {}): void {
         validationTail: Promise.resolve(),
         disposed: false,
         starting: undefined,
+        layoutIndexDigest: undefined,
+        layoutIndexStale: false,
+        visitedTargets: new Set(["."]),
       };
       ctx.effect(() => () => {
         const state = ambientState;
@@ -216,6 +239,30 @@ export function apply(ctx: Context, config: Config = {}): void {
     return first !== undefined && first.type === "text" ? first.text : "";
   };
 
+  /** Refresh the layout-index cache; a failure never blocks the step (D015). */
+  const refreshLayoutIndex = async (
+    state: SessionState,
+    client: BridgeClient,
+    cwd: string,
+    signal: AbortSignal,
+  ): Promise<void> => {
+    if (!state.layoutIndexStale && state.layoutIndexDigest !== undefined) return;
+    try {
+      const value = await client.request<unknown>("layoutIndex", { root: cwd }, signal);
+      const index = parseLayoutIndex(value);
+      const digest = digestText(index.prompt ?? "");
+      const changed = digest !== state.layoutIndexDigest;
+      state.layoutIndexDigest = digest;
+      state.layoutIndexStale = false;
+      if (!changed) return;
+      layoutSectionText = index.prompt ?? "";
+      layoutEntryPaths = new Set(index.entries.map((entry) => entry.path));
+    } catch (error) {
+      if (error instanceof BridgeRequestCancelledError) return;
+      state.failure = asBridgeError(error);
+    }
+  };
+
   const injectContext = async (
     agent: Agent,
     messages: UserMessage[],
@@ -233,6 +280,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (client === undefined || client.getStatus().state !== "ready") {
       return decision;
     }
+    await refreshLayoutIndex(state, client, cwd, signal);
 
     try {
       const value = await client.request<unknown>(
@@ -310,6 +358,12 @@ export function apply(ctx: Context, config: Config = {}): void {
     if (!shouldValidateAfterTool(String(exec.name), result.isError)) return decision;
 
     const state = stateFor(agent);
+    // Editing a `.norm` file may change the declared layout; refresh the
+    // system-prompt map on the next step (D015).
+    const editedPath = inputFilePath(exec.arguments);
+    if (editedPath !== undefined && (editedPath === ".norm" || editedPath.endsWith("/.norm"))) {
+      state.layoutIndexStale = true;
+    }
     const cwd = agent.session.header.cwd ?? process.cwd();
     const run = async (): Promise<PostToolDecision> => {
       const client = state.client;
@@ -363,7 +417,9 @@ export function apply(ctx: Context, config: Config = {}): void {
 
   ctx.on("tools/result", (exec, result) => {
     if (exec.agent === undefined || result.isError) return;
-    updateActiveTarget(stateFor(exec.agent), String(exec.name), exec.arguments);
+    const state = stateFor(exec.agent);
+    updateActiveTarget(state, String(exec.name), exec.arguments);
+    logFirstTouch(state, exec);
   });
 
   ctx.on("tools/post-execute", async (exec, result, next) => {
@@ -394,6 +450,28 @@ export function apply(ctx: Context, config: Config = {}): void {
   // Runtime Skill registration (D009): one dsh-specific Skill from the
   // package file. rank 250 — project roots override, uninstall removes.
   ctx.skills.register(loadSkillRegistration());
+
+  // Layout-index section (D015): registered in the plugin's own scope; the
+  // provider re-reads the shared cache at every assembly, so refreshes never
+  // re-register and the section contributes nothing until the first map lands.
+  ctx.systemPrompt.section({
+    name: LAYOUT_SECTION_NAME,
+    order: LAYOUT_SECTION_ORDER,
+    text: () => layoutSectionText,
+  });
+
+  /** D015 measurement: plugin-log only, never the session log. */
+  function logFirstTouch(state: SessionState, exec: ToolExecution): void {
+    const target = state.activeTarget;
+    if (state.visitedTargets.has(target)) return;
+    state.visitedTargets.add(target);
+    const cwd = exec.agent?.session.header.cwd ?? process.cwd();
+    const relativeTarget = relative(cwd, target) || ".";
+    const declaresNorm = layoutEntryPaths.has(relativeTarget);
+    ctx.logger.debug(
+      `dsh-norm-spec: first-touch tool=${String(exec.name)} dir=${relativeTarget} declaresNorm=${declaresNorm}`,
+    );
+  }
 }
 
 function updateActiveTarget(
@@ -403,6 +481,13 @@ function updateActiveTarget(
 ): void {
   const target = projectConventionTarget(toolName, input);
   if (target !== undefined) state.activeTarget = target;
+}
+
+/** Raw `file_path` argument, when the input carries one. */
+function inputFilePath(input: unknown): string | undefined {
+  if (typeof input !== "object" || input === null) return undefined;
+  const raw = (input as Record<string, unknown>).file_path;
+  return typeof raw === "string" && raw.length > 0 ? raw : undefined;
 }
 
 function appendFeedback(

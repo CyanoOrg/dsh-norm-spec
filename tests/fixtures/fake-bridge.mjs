@@ -214,6 +214,23 @@ if (mode === "startup-failure") {
           norm_coverage: { total_dirs: 3, dirs_with_norm: 2, ratio: 0.667 },
         },
       });
+    } else if (request.method === "layoutIndex") {
+      emit({
+        apiVersion,
+        type: "response",
+        id: request.id,
+        status: "ok",
+        result: {
+          apiVersion: "dsh-norm-spec/layout-index/v1",
+          root: ".",
+          entries: [
+            { path: ".", description: "root governance" },
+            { path: "crates/engine", description: null },
+          ],
+          prompt:
+            "DSH_NORM_LAYOUT_INDEX_V1\nmap\n- .: root governance\n- crates/engine\nEND_DSH_NORM_LAYOUT_INDEX_V1",
+        },
+      });
     } else if (request.method === "cancel") {
       emit({
         apiVersion,

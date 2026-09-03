@@ -59,6 +59,7 @@ const server = createServer((req, res) => {
     let nReminders = 0;
     let hasDocsScope = false;
     let hasRootScope = false;
+    let hasLayoutIndex = false;
     try {
       const parsed = JSON.parse(body);
       for (const message of parsed.messages ?? []) {
@@ -74,8 +75,9 @@ const server = createServer((req, res) => {
         }
       }
     } catch { /* ignore */ }
-    chatRequests.push({ nReminders, hasDocsScope, hasRootScope });
-    console.log(`[stub] chat#${chatRequests.length}: reminders=${nReminders} root=${hasRootScope} docs=${hasDocsScope} phase=${phase}`);
+    hasLayoutIndex = body.includes("DSH_NORM_LAYOUT_INDEX_V1");
+    chatRequests.push({ nReminders, hasDocsScope, hasRootScope, hasLayoutIndex });
+    console.log(`[stub] chat#${chatRequests.length}: reminders=${nReminders} root=${hasRootScope} docs=${hasDocsScope} index=${hasLayoutIndex} phase=${phase}`);
 
     let isTitleRequest = false;
     try {
@@ -177,8 +179,9 @@ const first = chatRequests[0];
 const last = chatRequests[chatRequests.length - 1];
 const pass = first !== undefined && last !== undefined
   && first.nReminders === 1 && first.hasRootScope && !first.hasDocsScope
-  && last.nReminders === 1 && last.hasDocsScope && last.hasRootScope;
+  && last.nReminders === 1 && last.hasDocsScope && last.hasRootScope
+  && last.hasLayoutIndex;
 console.log("[e2e] target re-scoping:", pass ? "PASS" : "FAIL",
   `(first: reminders=${first?.nReminders} root=${first?.hasRootScope} docs=${first?.hasDocsScope};`
-  + ` last: reminders=${last?.nReminders} root=${last?.hasRootScope} docs=${last?.hasDocsScope})`);
+  + ` last: reminders=${last?.nReminders} root=${last?.hasRootScope} docs=${last?.hasDocsScope} index=${last?.hasLayoutIndex})`);
 process.exit(pass ? 0 : 1);
