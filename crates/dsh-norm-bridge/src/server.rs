@@ -103,6 +103,12 @@ struct ScanParams {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LayoutIndexParams {
+    root: PathBuf,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CancelParams {
     request_id: String,
 }
@@ -250,6 +256,7 @@ impl SessionState<'_> {
             "promptContext" => self.handle_prompt_context(request),
             "validate" => self.handle_validate(request),
             "scan" => self.handle_scan(request),
+            "layoutIndex" => self.handle_layout_index(request),
             "cancel" => self.handle_cancel(&request),
             "shutdown" => self.handle_shutdown(request),
             _ => {
@@ -376,6 +383,33 @@ impl SessionState<'_> {
         };
         let cancellation = CancellationToken::default();
         spawn_scan(
+            self.runtime.clone(),
+            request.id.clone(),
+            params,
+            cancellation.clone(),
+            self.events.clone(),
+        );
+        self.active = Some(ActiveRequest {
+            id: request.id,
+            cancellation,
+        });
+        Ok(LoopControl::Continue)
+    }
+
+    fn handle_layout_index(&mut self, request: RequestFrame) -> Result<LoopControl, UpstreamError> {
+        if self.active.is_some() {
+            send_busy(self.output, &request.id)?;
+            return Ok(LoopControl::Continue);
+        }
+        let params: LayoutIndexParams = match request_params(&request) {
+            Ok(params) => params,
+            Err(error) => {
+                send_error(self.output, &request.id, &error)?;
+                return Ok(LoopControl::Continue);
+            }
+        };
+        let cancellation = CancellationToken::default();
+        spawn_layout_index(
             self.runtime.clone(),
             request.id.clone(),
             params,
@@ -539,6 +573,21 @@ fn spawn_scan(
     thread::spawn(move || {
         let result = runtime
             .scan_initialized(&params.root, &cancellation)
+            .and_then(to_value);
+        let _ = events.send(InputEvent::OperationFinished { id, result });
+    });
+}
+
+fn spawn_layout_index(
+    runtime: UpstreamRuntime,
+    id: String,
+    params: LayoutIndexParams,
+    cancellation: CancellationToken,
+    events: SyncSender<InputEvent>,
+) {
+    thread::spawn(move || {
+        let result = runtime
+            .layout_index_initialized(&params.root, &cancellation)
             .and_then(to_value);
         let _ = events.send(InputEvent::OperationFinished { id, result });
     });

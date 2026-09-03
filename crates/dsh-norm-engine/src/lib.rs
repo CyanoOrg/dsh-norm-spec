@@ -6,9 +6,15 @@
 
 #![forbid(unsafe_code)]
 
+mod layout_index;
 mod norm_protocol;
 mod prompt_context;
 mod upstream_pin;
+
+pub use layout_index::{
+    LAYOUT_INDEX_API_VERSION, LayoutIndex, LayoutIndexEntry, LayoutIndexError,
+    MAX_LAYOUT_INDEX_BYTES,
+};
 
 pub use norm_protocol::{
     NormCollectResponse, NormCollectedConvention, NormCompatibility, NormConformanceCandidate,

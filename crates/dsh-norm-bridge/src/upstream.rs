@@ -8,7 +8,7 @@ use std::{
 };
 
 use dsh_norm_engine::{
-    NORM_COLLECT_API, NORM_CONFORMANCE_API, NORM_CONTRACT_BUNDLE_API, NORM_ERROR_API,
+    LayoutIndex, NORM_COLLECT_API, NORM_CONFORMANCE_API, NORM_CONTRACT_BUNDLE_API, NORM_ERROR_API,
     NORM_SCAN_API, NORM_VALIDATE_API, NormCollectResponse, NormCompatibility,
     NormConformanceReport, NormErrorResponse, NormScanResponse, NormValidateResponse,
     RELEASE_ARTIFACT_API, UPSTREAM_CHECKSUM_FILE, UPSTREAM_PIN_API, UpstreamAssetPin, UpstreamPin,
@@ -605,6 +605,30 @@ impl UpstreamRuntime {
         Ok(response)
     }
 
+    pub(crate) fn layout_index_initialized(
+        &self,
+        project_root: &Path,
+        cancellation: &CancellationToken,
+    ) -> Result<LayoutIndex, UpstreamOperationError> {
+        let scan = self.scan_initialized(project_root, cancellation)?;
+        let declaring: Vec<&dsh_norm_engine::NormScannedDirectory> = scan
+            .directories
+            .iter()
+            .filter(|directory| directory.has_norm)
+            .take(MAX_LAYOUT_INDEX_COLLECTS)
+            .collect();
+        let mut collects = Vec::with_capacity(declaring.len());
+        for directory in declaring {
+            collects.push(self.collect_initialized(
+                project_root,
+                Path::new(&directory.path),
+                cancellation,
+            )?);
+        }
+        LayoutIndex::from_scan(scan.root.clone(), &scan, &collects)
+            .map_err(|error| UpstreamError::external(error.code(), error.message()).into())
+    }
+
     /// Structurally scan the project through the pinned upstream engine.
     ///
     /// # Errors
@@ -622,7 +646,32 @@ impl UpstreamRuntime {
             )),
         }
     }
+
+    /// Build the layout index: one scan plus one collect per declaring
+    /// directory, rendered by the engine into the system-prompt map (D015).
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable error for an incompatible runtime, invalid project
+    /// root, upstream command failure, cancellation, or projection failure.
+    pub fn layout_index(
+        &self,
+        project_root: impl AsRef<Path>,
+    ) -> Result<LayoutIndex, UpstreamError> {
+        self.handshake()?;
+        match self.layout_index_initialized(project_root.as_ref(), &CancellationToken::default()) {
+            Ok(response) => Ok(response),
+            Err(UpstreamOperationError::Failed(error)) => Err(error),
+            Err(UpstreamOperationError::Cancelled) => Err(UpstreamError::new(
+                "dsh-norm-spec/upstream/cancelled",
+                "layout index construction was cancelled",
+            )),
+        }
+    }
 }
+
+/// One upstream spawn per declaring directory, capped in scan order (D015).
+pub(crate) const MAX_LAYOUT_INDEX_COLLECTS: usize = 16;
 
 fn embedded_pin() -> Result<UpstreamPin, UpstreamError> {
     let pin = UpstreamPin::embedded().map_err(|error| {

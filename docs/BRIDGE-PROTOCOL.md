@@ -47,6 +47,7 @@ Supported methods:
 | `promptContext` | `root`, `target` | Collect and render `dsh-norm-spec/prompt-context/v1` for DSH injection. |
 | `validate` | `root` | Run strict upstream validation for all `.norm` files. |
 | `scan` | `root` | Run the verified upstream structural scan (`norm-spec/scan/v1`); added by D014. |
+| `layoutIndex` | `root` | Scan plus one collect per declaring directory (capped at 16), rendered by the engine into `dsh-norm-spec/layout-index/v1`; added by D015. |
 | `cancel` | `requestId` | Cancel exactly one active semantic request. |
 | `shutdown` | none | Cancel active work if needed, acknowledge, then exit zero. |
 
