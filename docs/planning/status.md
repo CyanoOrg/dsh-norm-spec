@@ -35,6 +35,13 @@
   viable but rejected with measurement-gated reopen conditions. Watch
   item 3 additionally covers the rc.7+ pre-execute context seam
   (target-context plan D-C).
+- WS1/WS1.5 implemented on branch `fix/target-context` (2026-09-03,
+  D013/D014): `file_path` tracking + directory normalization with unit
+  tests and the `dsh-e2e-rescope.mjs` step-level E2E (re-scoping PASS
+  against real rc.6); bridge `scan` method + repaired `norm_scan` verified
+  against the sealed rc.1 payload live (65 directories, coverage intact).
+  Gates green: fmt/clippy/test (19) + typecheck/test (26). Next: WS5/WS4
+  (system-prompt layout index, Skill text, measurement), then WS2.
 - Known open items, in order:
   1. Post-0.1.0 planning: Host Adapter SDK convergence with
      pi-norm-spec (extraction waits on pi E3/E4).

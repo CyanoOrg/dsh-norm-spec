@@ -5,6 +5,24 @@ preparation.
 
 ## [Unreleased]
 
+### Fixed
+
+- Active-target tracking never engaged: the projection read a `path`
+  tool-argument field, while DSH rc.6 file tools send `file_path`, so the
+  injection target stayed at the session root for the whole session and
+  directory-scoped convention paging never happened (D013). The projection
+  now reads `file_path` (`path` kept as a harmless alias), normalizes every
+  tracked target to the parent directory, is unit-tested, and a step-level
+  E2E (`scripts/dsh-e2e-rescope.mjs`) asserts re-scoping on a subdirectory
+  chain.
+- `norm_scan` reported only the root inheritance chain: it substituted
+  `collect` at the root target instead of scanning, contradicting its
+  contract and the Skill text (D014). The bridge gains an additive `scan`
+  method running the pinned upstream `norm scan` (`norm-spec/scan/v1`,
+  snake_case wire fields), and the tool now renders real per-directory
+  coverage. See `docs/planning/target-context-plan.md` for the full
+  post-0.1.0 runtime review.
+
 ## [0.1.0] - 2026-08-18
 
 First stable release of the dsh adapter.
