@@ -383,3 +383,49 @@ semantics upstream. The wire fields of `norm-spec/scan/v1` are
 snake_case (unlike the camelCase collect/validate responses), so the
 typed mirror matches the upstream serde spelling exactly; the additive
 method is invisible to consumers that never call it.
+
+## D015 — Layout index in a system-prompt section; education over enforcement for first touches
+
+**Decision.** The adapter contributes one system-prompt section,
+`dsh-norm-spec:layout-index` (order 150), whose provider renders the
+project's convention map: every directory declaring a `.norm` file with
+its `metadata.description` one-liner, plus an instruction to consult a
+directory's conventions before working there. The map is computed by a
+new additive bridge method `layoutIndex` (`root`): the bridge scans
+through the pinned upstream engine and collects each declaring directory
+(capped at 16 in scan order), and `dsh-norm-engine` renders the
+deterministic `dsh-norm-spec/layout-index/v1` projection with
+fail-not-truncate sizing. The section text refreshes when a post-edit
+validation follows an edit to a `.norm` file; between refreshes it is
+stable, so the system prompt — the most KV-cache-stable prefix — never
+churns. Residual first-touch risk is measured through plugin debug logs
+(never the session log): first touches per directory classified by tool
+(read- vs write-first), whether the directory declared its own `.norm`,
+taken from the loaded index.
+
+**Context.** The first action into a directory cannot be preceded by that
+directory's conventions: rc.6 `PreToolDecision` is `allow | deny | ask`
+with no context attachment, and the earliest injection seam is the next
+step's `agent/pre-step` (target-context plan F2). Deny-until-informed is
+rejected in the plan (soft-feedback positioning, D006's spirit, failure
+noise) with measurement-gated reopen conditions. The layout itself is
+statically enumerable (F4): `norm-spec/scan/v1` plus per-directory
+collects answer "where do deeper conventions exist" without predicting
+model output, and the model — the only predictor with access to its own
+intent — is educated instead. The DSH-specific rule "model-visible output
+uses standard user messages and tool results only" is hereby amended: a
+registered `dsh-system-prompt` section is a first-class host surface, not
+a session event; D003 (no custom session event types) is unchanged. The
+section is registered globally and reflects the most recently refreshed
+project layout — matching the dominant one-project-per-process host;
+per-session scoping is deferred until a scoped provider surface is
+verified on the rc line. A failed layout-index fetch degrades to an empty
+section contribution, records the failure in session state, and surfaces
+through the existing post-edit failure path; it never fabricates content.
+
+**Rationale.** The system prompt is the one prefix that never churns, so
+a map that changes rarely belongs there rather than in the replaceable
+reminder slot; the map turns the uninformed first touch from an unknown
+unknown into a known unknown. Projection stays in `dsh-norm-engine` and
+collection semantics upstream; TypeScript only caches text and refreshes
+it, keeping the thin-TS rule intact.
