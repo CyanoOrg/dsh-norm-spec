@@ -18,6 +18,23 @@
   off; head branches never auto-deleted; `cyano-bot` back to Write
   via `norm-automation` (admin removed, verified by readback and a
   real push).
+- Post-0.1.0 runtime review (2026-09-03) produced
+  `docs/planning/target-context-plan.md`: a verified tracking defect
+  (active target stays at the session root; DSH file tools take
+  `file_path`, the adapter reads `path`), the injection-timing host
+  boundary, and the approved dual-track direction for multi-directory
+  scoping (adapter-side bounded multi-target now; batch collect proposed
+  upstream in norm-spec `docs/planning/batch-collect-proposal.md`).
+  Implementation workstreams start there; decision records precede each.
+  The same-day timing discussion added: the static convention layout is
+  enumerable via upstream `norm scan`, so the first-touch gap is closed
+  educationally — a layout index injected through a `dsh-system-prompt`
+  section (D-D), a repaired `norm_scan` backed by a new bridge `scan`
+  method (F5/WS1.5; the tool currently fakes scan with collect and cannot
+  see subdirectory conventions), and deny-until-informed recorded as
+  viable but rejected with measurement-gated reopen conditions. Watch
+  item 3 additionally covers the rc.7+ pre-execute context seam
+  (target-context plan D-C).
 - Known open items, in order:
   1. Post-0.1.0 planning: Host Adapter SDK convergence with
      pi-norm-spec (extraction waits on pi E3/E4).
