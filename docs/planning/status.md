@@ -57,11 +57,18 @@
   the real rc.6 agent loop. Gates green: fmt/clippy/test (29) +
   typecheck/test (33). Target-context plan workstreams complete; branch
   `fix/target-context` ready for review/PR.
-- 0.2.0 promotion in progress (2026-09-03, branch
-  `chore/promote-0.2.0`): workspace + six npm manifests at 0.2.0,
-  intra-workspace bridge dependency raised to `0.2.0` (was
-  `0.1.0-alpha.1`), CHANGELOG promoted, ROADMAP 0.2 noted. Staging smoke
-  re-run required by the SOP before merge.
+- Stage: **0.2.0 shipped** (2026-09-03). Arc: promotion PR #16 (9/9
+  checks green) -> release-manager ff merge `190c69d` -> signed tag
+  `v0.2.0` -> candidates run 33747948121 bound to the tag revision ->
+  human publish of the five @cyanoorg packages without `--tag` ->
+  `latest` = 0.2.0 on all five (registry `npm view`) -> P4 registry E2E
+  green against the published 0.2.0 (fresh DSH_HOME, registry install,
+  no env overrides: single-slot reminder, docs re-scope, layout index in
+  the system prompt, zero modifications). GitHub Release notes attached
+  to the tag. Carried items: intra-workspace bridge dependency raised to
+  `0.2.0` (stale `0.1.0-alpha.1` caret surfaced by the promotion);
+  `productCompat` intentionally stays `=0.1.0-rc.1` until WS3.
+- Known open items, in order:
 - Known open items, in order:
   1. Post-0.1.0 planning: Host Adapter SDK convergence with
      pi-norm-spec (extraction waits on pi E3/E4).
