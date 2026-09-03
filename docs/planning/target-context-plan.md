@@ -220,6 +220,13 @@ its own intent. The approved mix:
    the target set (prefetch only).
 6. Prompt-context payload shape may need a version identifier of its own;
    decided in the same record as (2).
+7. Alignment constraint (2026-09-03): the projection merge mirrors the
+   upstream batch-collect semantics fixed in norm-spec decision D020 —
+   per-scope sections, dedupe-by-reference, request-order sections, one
+   shared budget, normalization before identity, byte-stability — so the
+   WS3 migration replaces this projection merge with one `collect/v2`
+   call and a deliberate pin bump. The adapter working set (4) stays
+   under the protocol target cap (8).
 
 ### WS3 — Upstream batch collect (norm-spec)
 
