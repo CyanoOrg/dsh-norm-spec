@@ -68,7 +68,7 @@ const server = createServer((req, res) => {
           : Array.isArray(message.content)
             ? message.content.map((b) => b.text ?? "").join("\n")
             : "";
-        if (text.includes("DSH_NORM_SPEC_CONTEXT_V1")) {
+        if (text.includes("DSH_NORM_SPEC_CONTEXT")) {
           nReminders += 1;
           if (text.includes("DOCS-SCOPE-MARKER")) hasDocsScope = true;
           if (text.includes("ROOT-ONLY-MARKER")) hasRootScope = true;

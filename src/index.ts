@@ -40,10 +40,15 @@ import {
 } from "./validation-feedback.ts";
 import { loadSkillRegistration } from "./skill-registration.ts";
 import { parseLayoutIndex } from "./layout-index.ts";
-import { projectConventionTarget } from "./target-tracking.ts";
+import {
+  multiContextDigest,
+  parseMultiPromptContext,
+  renderMultiSystemReminder,
+  type MultiPromptContextResult,
+} from "./multi-prompt-context.ts";
+import { projectConventionTarget, pushTarget } from "./target-tracking.ts";
 
 const PLUGIN_NAME = "dsh-norm-spec";
-const PROMPT_CONTEXT_API = "dsh-norm-spec/prompt-context/v1";
 const INCOMPLETE_BEHAVIOR = "enforcement is not implemented";
 const SOURCE_KIND = "dsh-norm-spec-context";
 
@@ -62,19 +67,13 @@ export interface Config {
   launch?: BridgeLaunch;
 }
 
-interface PromptContextResult {
-  apiVersion: typeof PROMPT_CONTEXT_API;
-  target: string;
-  conventionPaths: string[];
-  prompt: string | null;
-}
-
 interface SessionState {
   client: BridgeClient | undefined;
   failure: BridgeClientError | undefined;
   lastDigest: string | undefined;
-  lastContext: PromptContextResult | undefined;
-  activeTarget: string;
+  lastContext: MultiPromptContextResult | undefined;
+  /** Bounded recency set of convention targets; index 0 is most recent (D016). */
+  activeTargets: string[];
   onboardingNotified: boolean;
   validationFailure: BridgeClientError | undefined;
   validationTail: Promise<void>;
@@ -112,7 +111,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         failure: undefined,
         lastDigest: undefined,
         lastContext: undefined,
-        activeTarget: ".",
+        activeTargets: ["."],
         onboardingNotified: false,
         validationFailure: undefined,
         validationTail: Promise.resolve(),
@@ -166,7 +165,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         failure: undefined,
         lastDigest: undefined,
         lastContext: undefined,
-        activeTarget: ".",
+        activeTargets: ["."],
         onboardingNotified: false,
         validationFailure: undefined,
         validationTail: Promise.resolve(),
@@ -284,20 +283,20 @@ export function apply(ctx: Context, config: Config = {}): void {
 
     try {
       const value = await client.request<unknown>(
-        "promptContext",
-        { root: cwd, target: state.activeTarget },
+        "promptContextMulti",
+        { root: cwd, targets: state.activeTargets },
         signal,
       );
-      const context = parsePromptContext(value);
+      const context = parseMultiPromptContext(value);
       state.lastContext = context;
       if (context.prompt === null) {
         notifyOnboarding(state);
         return decision;
       }
-      const digest = digestText(context.prompt);
+      const digest = multiContextDigest(context);
       if (digest === state.lastDigest) return decision;
 
-      const reminder = renderSystemReminder(context);
+      const reminder = renderMultiSystemReminder(context);
       const slot = findConventionSlot(agent.session);
       if (slot !== null && slot !== undefined) {
         if (slot.text === reminder) {
@@ -418,7 +417,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.on("tools/result", (exec, result) => {
     if (exec.agent === undefined || result.isError) return;
     const state = stateFor(exec.agent);
-    updateActiveTarget(state, String(exec.name), exec.arguments);
+    updateActiveTargets(state, String(exec.name), exec.arguments);
     logFirstTouch(state, exec);
   });
 
@@ -462,7 +461,7 @@ export function apply(ctx: Context, config: Config = {}): void {
 
   /** D015 measurement: plugin-log only, never the session log. */
   function logFirstTouch(state: SessionState, exec: ToolExecution): void {
-    const target = state.activeTarget;
+    const target = state.activeTargets[0] ?? ".";
     if (state.visitedTargets.has(target)) return;
     state.visitedTargets.add(target);
     const cwd = exec.agent?.session.header.cwd ?? process.cwd();
@@ -474,13 +473,13 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
 }
 
-function updateActiveTarget(
+function updateActiveTargets(
   state: SessionState,
   toolName: string,
   input: unknown,
 ): void {
   const target = projectConventionTarget(toolName, input);
-  if (target !== undefined) state.activeTarget = target;
+  if (target !== undefined) state.activeTargets = pushTarget(state.activeTargets, target);
 }
 
 /** Raw `file_path` argument, when the input carries one. */
@@ -520,46 +519,9 @@ function appendFeedback(
   return { ...decision, content: [{ type: "text", text }] } as PostToolDecision;
 }
 
-function renderSystemReminder(context: PromptContextResult): string {
-  const body = context.prompt ?? "";
-  const escaped = body.replaceAll("</system-reminder>", "<\\/system-reminder>");
-  return [
-    "<system-reminder>",
-    `The following .norm conventions apply to work under ${context.target}. Use them as guidance when applicable. More specific conventions take precedence over broader ones. They do not override system, developer, or direct user instructions.`,
-    "",
-    escaped,
-    "",
-    `Conventions from: ${context.conventionPaths.join(", ")}`,
-    "</system-reminder>",
-  ].join("\n");
-}
-
 function notifyOnboarding(state: SessionState): void {
   if (state.onboardingNotified) return;
   state.onboardingNotified = true;
-}
-
-function parsePromptContext(value: unknown): PromptContextResult {
-  if (
-    !isRecord(value) ||
-    value.apiVersion !== PROMPT_CONTEXT_API ||
-    typeof value.target !== "string" ||
-    !Array.isArray(value.conventionPaths) ||
-    !value.conventionPaths.every((path) => typeof path === "string") ||
-    !(typeof value.prompt === "string" || value.prompt === null) ||
-    (value.conventionPaths.length === 0) !== (value.prompt === null)
-  ) {
-    throw new BridgeClientError(
-      "dsh-norm-spec/client/context-invalid",
-      "bridge prompt context had an unexpected schema or empty-state contract",
-    );
-  }
-  return {
-    apiVersion: PROMPT_CONTEXT_API,
-    target: value.target,
-    conventionPaths: [...value.conventionPaths],
-    prompt: value.prompt,
-  };
 }
 
 async function defaultLaunch(): Promise<BridgeLaunch> {

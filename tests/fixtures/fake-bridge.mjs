@@ -150,6 +150,33 @@ if (mode === "startup-failure") {
           prompt: empty ? null : `PI_NORM_SPEC_CONTEXT_V1\ntarget=${target}\nEND_PI_NORM_SPEC_CONTEXT_V1`,
         },
       });
+    } else if (request.method === "promptContextMulti") {
+      const targets = Array.isArray(request.params.targets) ? request.params.targets : [];
+      const scopes = targets.map((target) => {
+        const hasOwn = target.startsWith("docs");
+        const conventions = hasOwn
+          ? [
+              { path: `${target}/.norm`, frontmatter: { metadata: { layer: target } }, body: `# ${target}` },
+              { path: ".norm", frontmatter: { metadata: { layer: "root" } }, body: "# root" },
+            ]
+          : [{ path: ".norm", frontmatter: { metadata: { layer: "root" } }, body: "# root" }];
+        return { target, conventionPaths: conventions.map((c) => c.path), conventions };
+      });
+      const allEmpty = scopes.every((scope) => scope.conventions.length === 0);
+      emit({
+        apiVersion,
+        type: "response",
+        id: request.id,
+        status: "ok",
+        result: {
+          apiVersion: "dsh-norm-spec/prompt-context-multi/v1",
+          root: ".",
+          scopes,
+          prompt: allEmpty
+            ? null
+            : `DSH_NORM_SPEC_CONTEXT_MULTI_V1\ntargets=${targets.join(",")}\nEND_DSH_NORM_SPEC_CONTEXT_MULTI_V1`,
+        },
+      });
     } else if (request.method === "validate" && mode === "validate-error") {
       emit({
         apiVersion,

@@ -1,5 +1,8 @@
 import { dirname } from "node:path";
 
+/** Bounded recency set size (D016); mirrors the bridge hard cap. */
+export const MAX_ACTIVE_TARGETS = 4;
+
 /**
  * Project one successful file-tool execution into the convention target:
  * the directory whose inherited conventions apply.
@@ -27,4 +30,16 @@ export function projectConventionTarget(
     default:
       return undefined;
   }
+}
+
+/**
+ * Move `next` to the front of the recency set, deduplicating and evicting
+ * beyond `maximum` (D016). Returns a new array; index 0 is most recent.
+ */
+export function pushTarget(
+  targets: string[],
+  next: string,
+  maximum: number = MAX_ACTIVE_TARGETS,
+): string[] {
+  return [next, ...targets.filter((target) => target !== next)].slice(0, maximum);
 }
