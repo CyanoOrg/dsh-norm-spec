@@ -7,6 +7,16 @@ preparation.
 
 ### Added
 
+- Bounded multi-target convention context (D016): the adapter tracks a
+  recency set of at most 4 active directories and injects one
+  `<system-reminder>` covering all of them — scope sections in
+  most-recent-first order, shared conventions rendered with full content
+  once and shared markers thereafter. Backed by an additive bridge
+  `promptContextMulti` method (serial `collect` fan-out under the existing
+  one-active-operation rule, one cancellation token across the fan-out)
+  and the engine's `dsh-norm-spec/prompt-context-multi/v1` merged
+  projection. Single-slot replacement and digest suppression are
+  unchanged; alternating directories no longer churn the reminder.
 - System-prompt layout index (D015): one registered
   `dsh-norm-spec:layout-index` section maps every directory declaring
   `.norm` conventions with its `metadata.description`, so the model knows

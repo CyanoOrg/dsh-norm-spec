@@ -46,8 +46,17 @@
   (order 150, digest-refreshed after `.norm` edits), Skill
   collect-before-work guidance, and first-touch debug measurement.
   E2E extended: the convention map appears in the system prompt from the
-  step after the first fetch. Gates green: fmt/clippy/test (23) +
-  typecheck/test (29). Next: WS2 bounded multi-target context.
+  step after the first fetch.
+- WS2 implemented on the same branch (2026-09-03, D016): bridge
+  `promptContextMulti` (strict target-set validation, serial fan-out,
+  one token across spawns) + engine `prompt-context-multi/v1` merged
+  projection (request-order scopes, most-specific-first within a scope,
+  full content once with shared markers, 256 KiB fail-not-truncate) +
+  adapter bounded recency set (max 4). Live-verified against the sealed
+  payload on a 3-scope demo tree; rescope E2E extended and PASS through
+  the real rc.6 agent loop. Gates green: fmt/clippy/test (29) +
+  typecheck/test (33). Target-context plan workstreams complete; branch
+  `fix/target-context` ready for review/PR.
 - Known open items, in order:
   1. Post-0.1.0 planning: Host Adapter SDK convergence with
      pi-norm-spec (extraction waits on pi E3/E4).
