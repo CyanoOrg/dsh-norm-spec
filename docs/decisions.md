@@ -429,3 +429,42 @@ reminder slot; the map turns the uninformed first touch from an unknown
 unknown into a known unknown. Projection stays in `dsh-norm-engine` and
 collection semantics upstream; TypeScript only caches text and refreshes
 it, keeping the thin-TS rule intact.
+
+## D016 — Bounded multi-target prompt context over a `promptContextMulti` method
+
+**Decision.** The bridge gains `promptContextMulti` (`root`,
+`targets: string[]`, non-empty, no duplicates, capped at 4) as a new
+`dsh-norm-spec/bridge/v1` method; `promptContext` stays single-target.
+The bridge fans out serially over `collect` v1 in request order under the
+existing one-active-operation rule, with one cancellation token spanning
+the fan-out. `dsh-norm-engine` renders the merged
+`dsh-norm-spec/prompt-context-multi/v1` projection: one scope per
+requested target in request order, conventions most-specific-first within
+a scope, and a convention collected by several scopes rendered with full
+content exactly once — in the first scope that collects it; later scopes
+carry a `{path, shared: true}` marker. The rendered prompt shares the
+256 KiB fail-not-truncate budget; `prompt` is `null` only when every
+scope is empty. The adapter tracks a bounded recency set of at most 4
+directories (most recent first) as of each step, requests the whole set,
+renders one `<system-reminder>` (single-slot mechanics and digest
+suppression unchanged), and skips optional user-message prefetch.
+
+**Context.** Alternating or parallel work across directories made the
+single active target flap: each scope change replaced the reminder (KV
+prefix churn) and at most one directory's conventions were visible. A
+bounded set fixes the visibility without unbounded token growth: four
+scopes bound the fan-out (at most four upstream spawns per step, rarely
+more than one after the set stabilizes) and the shared-content rule keeps
+the rendered prompt near the size of a single chain despite multiple
+scopes. Method-per-shape (rather than overloading `promptContext`) keeps
+every parameter set strictly validatable under `deny_unknown_fields`, and
+the new payload carries its own `prompt-context-multi/v1` identifier so
+old and new callers fail loudly instead of mis-parsing. Merge semantics
+remain projection-level (union, order, dedupe, labeling); inheritance
+itself stays upstream pending batch collect (WS3, norm-spec proposal).
+
+**Rationale.** The recency set matches how agents actually move — a
+handful of active directories per session — and recency ordering is the
+deterministic, meaningful priority for eviction and rendering. Full
+content once with shared markers preserves the complete-content contract
+while making multi-scope occupancy roughly the union, not the sum.

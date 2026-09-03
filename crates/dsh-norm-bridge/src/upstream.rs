@@ -8,11 +8,11 @@ use std::{
 };
 
 use dsh_norm_engine::{
-    LayoutIndex, NORM_COLLECT_API, NORM_CONFORMANCE_API, NORM_CONTRACT_BUNDLE_API, NORM_ERROR_API,
-    NORM_SCAN_API, NORM_VALIDATE_API, NormCollectResponse, NormCompatibility,
-    NormConformanceReport, NormErrorResponse, NormScanResponse, NormValidateResponse,
-    RELEASE_ARTIFACT_API, UPSTREAM_CHECKSUM_FILE, UPSTREAM_PIN_API, UpstreamAssetPin, UpstreamPin,
-    native_rust_target,
+    LayoutIndex, MultiPromptContext, NORM_COLLECT_API, NORM_CONFORMANCE_API,
+    NORM_CONTRACT_BUNDLE_API, NORM_ERROR_API, NORM_SCAN_API, NORM_VALIDATE_API,
+    NormCollectResponse, NormCompatibility, NormConformanceReport, NormErrorResponse,
+    NormScanResponse, NormValidateResponse, RELEASE_ARTIFACT_API, UPSTREAM_CHECKSUM_FILE,
+    UPSTREAM_PIN_API, UpstreamAssetPin, UpstreamPin, native_rust_target,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use sha2::{Digest, Sha256};
@@ -629,6 +629,30 @@ impl UpstreamRuntime {
             .map_err(|error| UpstreamError::external(error.code(), error.message()).into())
     }
 
+    /// Serial multi-target fan-out over `collect` v1, merged by the engine
+    /// (D016). One cancellation token spans every spawn.
+    pub(crate) fn prompt_context_multi_initialized(
+        &self,
+        project_root: &Path,
+        targets: &[String],
+        cancellation: &CancellationToken,
+    ) -> Result<MultiPromptContext, UpstreamOperationError> {
+        let mut collections = Vec::with_capacity(targets.len());
+        for target in targets {
+            collections.push(self.collect_initialized(
+                project_root,
+                Path::new(target),
+                cancellation,
+            )?);
+        }
+        let root_marker = collections
+            .first()
+            .map(|collection| collection.root.clone())
+            .unwrap_or_default();
+        MultiPromptContext::from_collections(root_marker, &collections)
+            .map_err(|error| UpstreamError::external(error.code(), error.message()).into())
+    }
+
     /// Structurally scan the project through the pinned upstream engine.
     ///
     /// # Errors
@@ -668,6 +692,68 @@ impl UpstreamRuntime {
             )),
         }
     }
+
+    /// Validate and run the multi-target fan-out (D016).
+    ///
+    /// # Errors
+    ///
+    /// Returns a stable error for an incompatible runtime, invalid project
+    /// root, invalid target set, upstream command failure, cancellation, or
+    /// projection failure.
+    pub fn prompt_context_multi(
+        &self,
+        project_root: impl AsRef<Path>,
+        targets: &[String],
+    ) -> Result<MultiPromptContext, UpstreamError> {
+        self.handshake()?;
+        validate_prompt_targets(targets)?;
+        match self.prompt_context_multi_initialized(
+            project_root.as_ref(),
+            targets,
+            &CancellationToken::default(),
+        ) {
+            Ok(response) => Ok(response),
+            Err(UpstreamOperationError::Failed(error)) => Err(error),
+            Err(UpstreamOperationError::Cancelled) => Err(UpstreamError::new(
+                "dsh-norm-spec/upstream/cancelled",
+                "multi-target prompt context was cancelled",
+            )),
+        }
+    }
+}
+
+/// Hard cap mirroring the adapter's bounded recency set (D016).
+pub(crate) const MAX_PROMPT_TARGETS: usize = 4;
+
+/// Strict target-set validation: non-empty, no empty strings, no duplicates,
+/// at most [`MAX_PROMPT_TARGETS`] entries.
+pub(crate) fn validate_prompt_targets(targets: &[String]) -> Result<(), UpstreamError> {
+    if targets.is_empty() {
+        return Err(UpstreamError::new(
+            "dsh-norm-spec/bridge/params-invalid",
+            "promptContextMulti requires at least one target",
+        ));
+    }
+    if targets.len() > MAX_PROMPT_TARGETS {
+        return Err(UpstreamError::new(
+            "dsh-norm-spec/bridge/params-invalid",
+            format!("promptContextMulti accepts at most {MAX_PROMPT_TARGETS} targets"),
+        ));
+    }
+    if targets.iter().any(std::string::String::is_empty) {
+        return Err(UpstreamError::new(
+            "dsh-norm-spec/bridge/params-invalid",
+            "promptContextMulti targets must be non-empty strings",
+        ));
+    }
+    let unique: std::collections::HashSet<&String> = targets.iter().collect();
+    if unique.len() != targets.len() {
+        return Err(UpstreamError::new(
+            "dsh-norm-spec/bridge/params-invalid",
+            "promptContextMulti targets must not contain duplicates",
+        ));
+    }
+    Ok(())
 }
 
 /// One upstream spawn per declaring directory, capped in scan order (D015).

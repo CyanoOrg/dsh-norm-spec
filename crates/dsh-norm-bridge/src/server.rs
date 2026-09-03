@@ -15,7 +15,7 @@ use serde_json::Value;
 use crate::{
     UpstreamError,
     process::CancellationToken,
-    upstream::{UpstreamOperationError, UpstreamRuntime},
+    upstream::{UpstreamOperationError, UpstreamRuntime, validate_prompt_targets},
 };
 
 const MAX_FRAME_BYTES: usize = 1024 * 1024;
@@ -105,6 +105,13 @@ struct ScanParams {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct LayoutIndexParams {
     root: PathBuf,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct PromptContextMultiParams {
+    root: PathBuf,
+    targets: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -257,6 +264,7 @@ impl SessionState<'_> {
             "validate" => self.handle_validate(request),
             "scan" => self.handle_scan(request),
             "layoutIndex" => self.handle_layout_index(request),
+            "promptContextMulti" => self.handle_prompt_context_multi(request),
             "cancel" => self.handle_cancel(&request),
             "shutdown" => self.handle_shutdown(request),
             _ => {
@@ -410,6 +418,40 @@ impl SessionState<'_> {
         };
         let cancellation = CancellationToken::default();
         spawn_layout_index(
+            self.runtime.clone(),
+            request.id.clone(),
+            params,
+            cancellation.clone(),
+            self.events.clone(),
+        );
+        self.active = Some(ActiveRequest {
+            id: request.id,
+            cancellation,
+        });
+        Ok(LoopControl::Continue)
+    }
+
+    fn handle_prompt_context_multi(
+        &mut self,
+        request: RequestFrame,
+    ) -> Result<LoopControl, UpstreamError> {
+        if self.active.is_some() {
+            send_busy(self.output, &request.id)?;
+            return Ok(LoopControl::Continue);
+        }
+        let params: PromptContextMultiParams = match request_params(&request) {
+            Ok(params) => params,
+            Err(error) => {
+                send_error(self.output, &request.id, &error)?;
+                return Ok(LoopControl::Continue);
+            }
+        };
+        if let Err(error) = validate_prompt_targets(&params.targets) {
+            send_error(self.output, &request.id, &error)?;
+            return Ok(LoopControl::Continue);
+        }
+        let cancellation = CancellationToken::default();
+        spawn_prompt_context_multi(
             self.runtime.clone(),
             request.id.clone(),
             params,
@@ -588,6 +630,21 @@ fn spawn_layout_index(
     thread::spawn(move || {
         let result = runtime
             .layout_index_initialized(&params.root, &cancellation)
+            .and_then(to_value);
+        let _ = events.send(InputEvent::OperationFinished { id, result });
+    });
+}
+
+fn spawn_prompt_context_multi(
+    runtime: UpstreamRuntime,
+    id: String,
+    params: PromptContextMultiParams,
+    cancellation: CancellationToken,
+    events: SyncSender<InputEvent>,
+) {
+    thread::spawn(move || {
+        let result = runtime
+            .prompt_context_multi_initialized(&params.root, &params.targets, &cancellation)
             .and_then(to_value);
         let _ = events.send(InputEvent::OperationFinished { id, result });
     });
@@ -907,8 +964,8 @@ mod tests {
     use std::{collections::HashSet, io::Cursor};
 
     use super::{
-        BRIDGE_API_VERSION, CollectParams, MAX_FRAME_BYTES, PromptContextParams, ScanParams,
-        decode_request, read_input_frame, request_params,
+        BRIDGE_API_VERSION, CollectParams, MAX_FRAME_BYTES, PromptContextMultiParams,
+        PromptContextParams, ScanParams, decode_request, read_input_frame, request_params,
     };
 
     #[test]
@@ -986,6 +1043,36 @@ mod tests {
         let request = decode_request(&frame, &mut seen)?;
         let Err(error) = request_params::<ScanParams>(&request) else {
             return Err("scan unexpectedly accepted a missing root".into());
+        };
+        assert_eq!(error.code(), "dsh-norm-spec/bridge/params-invalid");
+        Ok(())
+    }
+
+    #[test]
+    fn multi_params_reject_missing_and_oversized_target_sets()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut seen = HashSet::new();
+        let frame = format!(
+            r#"{{"apiVersion":"{BRIDGE_API_VERSION}","type":"request","id":"r-m1","method":"promptContextMulti","params":{{"root":"."}}}}"#
+        );
+        let request = decode_request(&frame, &mut seen)?;
+        let Err(error) = request_params::<PromptContextMultiParams>(&request) else {
+            return Err("promptContextMulti unexpectedly accepted missing targets".into());
+        };
+        assert_eq!(error.code(), "dsh-norm-spec/bridge/params-invalid");
+
+        let oversized = (0..5)
+            .map(|index| format!(r#""t{index}""#))
+            .collect::<Vec<_>>()
+            .join(",");
+        let mut seen = HashSet::new();
+        let frame = format!(
+            r#"{{"apiVersion":"{BRIDGE_API_VERSION}","type":"request","id":"r-m2","method":"promptContextMulti","params":{{"root":".","targets":[{oversized}]}}}}"#
+        );
+        let request = decode_request(&frame, &mut seen)?;
+        let params = request_params::<PromptContextMultiParams>(&request)?;
+        let Err(error) = crate::upstream::validate_prompt_targets(&params.targets) else {
+            return Err("oversized target set unexpectedly passed".into());
         };
         assert_eq!(error.code(), "dsh-norm-spec/bridge/params-invalid");
         Ok(())

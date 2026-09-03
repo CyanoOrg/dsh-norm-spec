@@ -45,6 +45,7 @@ Supported methods:
 | `status` | none | Return the active sealed payload identity. |
 | `collect` | `root`, `target` | Run the verified upstream collect protocol. |
 | `promptContext` | `root`, `target` | Collect and render `dsh-norm-spec/prompt-context/v1` for DSH injection. |
+| `promptContextMulti` | `root`, `targets` (1-4, no duplicates) | Serial collect fan-out in request order, merged by the engine into `dsh-norm-spec/prompt-context-multi/v1`; added by D016. |
 | `validate` | `root` | Run strict upstream validation for all `.norm` files. |
 | `scan` | `root` | Run the verified upstream structural scan (`norm-spec/scan/v1`); added by D014. |
 | `layoutIndex` | `root` | Scan plus one collect per declaring directory (capped at 16), rendered by the engine into `dsh-norm-spec/layout-index/v1`; added by D015. |
