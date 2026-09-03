@@ -1,11 +1,14 @@
 name: package-candidates
 
-# D011 P2: build and verify the five-package distribution candidates on
-# every push to main and every PR. Not a required check yet — it graduates
-# into main-quality once proven stable (pi precedent: E2 run 31942383415).
+# D011 P2 / D012: build and verify the five-package distribution candidates
+# on every push to main, every PR, and every v* tag — the tag run is the
+# release-provenance candidate set bound to the tagged revision
+# (RELEASE-SOP step 7; main-quality requires package-candidate-set).
 on:
   push:
     branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
   pull_request:
 
 permissions:
@@ -28,7 +31,7 @@ jobs:
           mkdir -p dist/root
           node --experimental-strip-types scripts/pack-root.mjs
       - name: Upload root candidate
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: root-candidate
           path: dist/root/cyanoorg-dsh-norm-spec-*.tgz*
@@ -68,7 +71,7 @@ jobs:
           mkdir -p dist/candidate
           bash scripts/build-platform-candidate.sh "${{ matrix.target }}" dist/candidate
       - name: Upload native candidate
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: candidate-${{ matrix.target }}
           path: dist/candidate/cyanoorg-dsh-norm-spec-*.tgz*
@@ -95,7 +98,7 @@ jobs:
           set -euo pipefail
           node --experimental-strip-types scripts/check-candidate-set.mjs
       - name: Upload the aggregate inventory
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: candidate-inventory
           path: dist/downloaded/inventory.json
