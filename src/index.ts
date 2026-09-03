@@ -10,8 +10,6 @@
  *
  * @module dsh-norm-spec
  */
-import { dirname } from "node:path";
-
 import type { Context } from "@deepseek-ai/cordis";
 import type { Agent, PreStepDecision } from "@deepseek-ai/dsh-agent";
 import type { Session } from "@deepseek-ai/dsh-session";
@@ -38,6 +36,7 @@ import {
   shouldValidateAfterTool,
 } from "./validation-feedback.ts";
 import { loadSkillRegistration } from "./skill-registration.ts";
+import { projectConventionTarget } from "./target-tracking.ts";
 
 const PLUGIN_NAME = "dsh-norm-spec";
 const PROMPT_CONTEXT_API = "dsh-norm-spec/prompt-context/v1";
@@ -402,22 +401,8 @@ function updateActiveTarget(
   toolName: string,
   input: unknown,
 ): void {
-  if (typeof input !== "object" || input === null) return;
-  const record = input as Record<string, unknown>;
-  const inputPath =
-    typeof record.path === "string" && record.path.length > 0 ? record.path : undefined;
-  if (inputPath === undefined) return;
-  switch (toolName) {
-    case "read":
-    case "edit":
-      state.activeTarget = inputPath;
-      break;
-    case "write":
-      state.activeTarget = dirname(inputPath);
-      break;
-    default:
-      break;
-  }
+  const target = projectConventionTarget(toolName, input);
+  if (target !== undefined) state.activeTarget = target;
 }
 
 function appendFeedback(
