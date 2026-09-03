@@ -70,16 +70,49 @@
   `productCompat` intentionally stays `=0.1.0-rc.1` until WS3.
 - Known open items, in order:
 - Known open items, in order:
-  1. Post-0.1.0 planning: Host Adapter SDK convergence with
-     pi-norm-spec (extraction waits on pi E3/E4).
-  2. CI hygiene minor: replace `upload-artifact@v5` (forced to Node 24
-     by the runner; deprecation warning in the release candidates run).
-  3. Upstream watch: DSH rc line drift (rc.7 exists; we stay pinned at
-     rc.6 per the peer-closure pin until a deliberate host bump).
+  1. WS3 migration trigger: norm-spec stable promotion ships
+     `collect/v2` (D020; semantics already mirror our projection) —
+     migrate the merge upstream, consume one `collect/v2` call, and
+     bump the `productCompat` pin deliberately (plan WS3).
+  2. D015 measurement review: after a period of normal use, read the
+     first-touch debug logs (read- vs write-first, declaresNorm,
+     norm_collect usage) and decide whether the rejected
+     deny-until-informed strict mode has a case (plan WS4; reopen
+     conditions in the strategy resolution).
+  3. CI hygiene: replace `upload-artifact@v5` (forced to Node 24 by the
+     runner; deprecation warning in the release candidates run) and add
+     `on.push.tags: ['v*']` + `workflow_dispatch` to
+     `package-candidates.yml` — the 0.2.0 candidates run bound to the
+     tag revision only because the ff merge made the main-push run
+     land on the release commit.
+  4. Host Adapter SDK convergence with pi-norm-spec (extraction waits
+     on pi E3/E4).
+  5. Upstream watch: DSH rc line drift (rc.7 exists; we stay pinned at
+     rc.6 per the peer-closure pin until a deliberate host bump);
+     revisit D-C if rc.7+ ships a pre-execute context seam.
 - Hard constraints active: never write custom session event types (D003);
   no `PATH` fallback for the bridge (packaged resolution is live since
   D011; env override remains for development); enforcement subset empty
   (D006).
+
+## Verification snapshot (2026-09-03, 0.2.0)
+
+| Gate | Command | Result |
+|---|---|---|
+| Rust format | `cargo fmt --check` | green |
+| Rust lint | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | green |
+| Rust tests | `cargo test --workspace --all-features` | 29 passed |
+| `.norm` | `norm validate .norm --strict` | OK, 0 errors (untouched by the arc) |
+| TS typecheck | `npm run typecheck` | green |
+| TS tests | `npm test` (typecheck + tests incl. staging regression guards) | 33 passed |
+| Staging smoke | `scripts/check-staging-smoke.ts` on the bumped versions (isolated consumer) | green |
+| CI (PR #15, #16) | cross-platform x4, candidates, quality gates | 9/9 green on both |
+| 0.2.0 promotion | all local gates + staging smoke re-run | green (2026-09-03) |
+| E2E (`dsh-e2e-rescope.mjs`) | real rc.6 agent loop: re-scope, single slot, layout index | PASS |
+| Live payload smokes | scan / layoutIndex / promptContextMulti against the sealed rc.1 payload | green |
+| Candidates (release run) | sha256 x5 sidecar + inventory cross-check, scoped loader-entry name | green, revision `190c69d`, run 33747948121 |
+| Publish | five packages, no `--tag` | done; `latest` -> 0.2.0 on all five |
+| P4 registry E2E | install 0.2.0 -> plugin boot -> single-slot reminder + re-scope + layout index | green, zero modifications |
 
 ## Verification snapshot (2026-08-18, 0.1.0)
 
