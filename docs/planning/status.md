@@ -40,8 +40,14 @@
   tests and the `dsh-e2e-rescope.mjs` step-level E2E (re-scoping PASS
   against real rc.6); bridge `scan` method + repaired `norm_scan` verified
   against the sealed rc.1 payload live (65 directories, coverage intact).
-  Gates green: fmt/clippy/test (19) + typecheck/test (26). Next: WS5/WS4
-  (system-prompt layout index, Skill text, measurement), then WS2.
+- WS5/WS4 implemented on the same branch (2026-09-03, D015): bridge
+  `layoutIndex` method (engine projection, live-verified against the
+  sealed payload), the `dsh-norm-spec:layout-index` system-prompt section
+  (order 150, digest-refreshed after `.norm` edits), Skill
+  collect-before-work guidance, and first-touch debug measurement.
+  E2E extended: the convention map appears in the system prompt from the
+  step after the first fetch. Gates green: fmt/clippy/test (23) +
+  typecheck/test (29). Next: WS2 bounded multi-target context.
 - Known open items, in order:
   1. Post-0.1.0 planning: Host Adapter SDK convergence with
      pi-norm-spec (extraction waits on pi E3/E4).

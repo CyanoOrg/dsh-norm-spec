@@ -5,6 +5,18 @@ preparation.
 
 ## [Unreleased]
 
+### Added
+
+- System-prompt layout index (D015): one registered
+  `dsh-norm-spec:layout-index` section maps every directory declaring
+  `.norm` conventions with its `metadata.description`, so the model knows
+  where deeper conventions exist before its first action there. Backed by
+  an additive bridge `layoutIndex` method (scan + one collect per
+  declaring directory, capped at 16) rendered by the engine as
+  `dsh-norm-spec/layout-index/v1`. The map refreshes after `.norm` edits;
+  plugin debug logs record first touches (read- vs write-first, whether
+  the directory declares conventions) per the measurement plan.
+
 ### Fixed
 
 - Active-target tracking never engaged: the projection read a `path`
