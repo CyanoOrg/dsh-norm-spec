@@ -328,3 +328,58 @@ the family gives a single audit answer, one merge loop, and one
 release-promotion path. No-bypass everywhere is the narrowest
 enforceable shape; the verified promotion loop shows nothing wider
 is needed.
+
+## D013 — Track `file_path` and normalize targets to directories
+
+**Decision.** Active-target projection reads the raw DSH tool-argument
+field `file_path` (with `path` retained only as a harmless alias) and
+normalizes every tracked `read`/`edit`/`write` target to the tool path's
+parent directory. The projection becomes a pure, unit-tested function.
+
+**Context.** Shipped 0.1.0 read `record.path`, a field DSH rc.6 file
+tools never send (`@deepseek-ai/dsh-tool-fs` `parseReadArgs` /
+`parseWriteArgs` / `parseEditArgs` all take `file_path`), so the active
+target never left the session root and directory-scoped paging — the
+README's core positioning — never engaged. The defect passed the 0.1.0
+gates because the step-level E2E asserts replacement through a root
+`.norm` content change only (no re-scoping assertion) and the projection
+had no unit test. Upstream `norm collect` treats a file target as its
+parent directory (norm-spec `collect_candidate_paths`), so file- and
+directory-grained targets yield the identical chain, while the prompt
+projection embeds the target string: file-grained tracking therefore
+produced two replacements with identical conventions when the agent
+read one file and edited another in the same directory, each rewriting
+the reminder slot and breaking the KV prefix at that position.
+
+**Rationale.** Directory normalization is information-preserving (the
+parent directory determines the collected chain) and removes same-
+directory digest churn; the field fix restores the documented paging
+behavior. The regression gap is closed with unit tests over the field
+names and an E2E re-scoping assertion on a subdirectory chain.
+
+## D014 — Expose upstream scan through a bridge `scan` method
+
+**Decision.** `dsh-norm-spec/bridge/v1` gains an additive `scan` method
+(`root` parameter) that invokes the pinned upstream
+`norm scan --root .` and returns the `norm-spec/scan/v1` response verbatim
+behind the bridge framing. The `norm_scan` native tool calls it instead of
+substituting `collect` at the root target. No existing method changes.
+
+**Context.** Shipped 0.1.0 faked scanning: the `norm_scan` tool called
+`collect` with the root as target, which returns only the root inheritance
+chain, contradicting the tool's declared contract and the Skill text
+("report which directories declare conventions") — in any project with
+subdirectory `.norm` files the tool under-reports. Upstream has shipped
+the capability all along: `norm scan` (norm-spec rc.1,
+`norm-spec/scan/v1`) is a deterministic structural traversal reporting
+per-directory `has_norm` coverage through the same sealed-payload
+boundary. The layout map is also the prerequisite for the timing-lag
+layout index (target-context plan F4/D-D/WS5).
+
+**Rationale.** Scanning is a read-only structural traversal with
+upstream-defined semantics; routing it through the verified bridge keeps
+one engine, one payload, and one verification path, and keeps format
+semantics upstream. The wire fields of `norm-spec/scan/v1` are
+snake_case (unlike the camelCase collect/validate responses), so the
+typed mirror matches the upstream serde spelling exactly; the additive
+method is invisible to consumers that never call it.
