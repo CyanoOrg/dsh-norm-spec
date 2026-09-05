@@ -68,8 +68,10 @@
   to the tag. Carried items: intra-workspace bridge dependency raised to
   `0.2.0` (stale `0.1.0-alpha.1` caret surfaced by the promotion);
   `productCompat` intentionally stays `=0.1.0-rc.1` until WS3.
-- Known open items, in order:
-- Known open items, in order:
+- Known open items, in order. Items 3 and 4 are approved soak-window
+  parallel work (2026-09-05): norm-spec's stable-promotion soak window
+  (opened with the pi-norm-spec `v0.1.0-beta.1` publication) gates
+  upstream norm-spec changes only, not downstream integration.
   1. WS3 migration trigger: norm-spec stable promotion ships
      `collect/v2` (D020; semantics already mirror our projection) —
      migrate the merge upstream, consume one `collect/v2` call, and
@@ -85,8 +87,10 @@
      `package-candidates.yml` — the 0.2.0 candidates run bound to the
      tag revision only because the ff merge made the main-push run
      land on the release commit.
-  4. Host Adapter SDK convergence with pi-norm-spec (extraction waits
-     on pi E3/E4).
+  4. Host Adapter SDK convergence with pi-norm-spec. The pi E3/E4
+     precondition is met (pi-norm-spec `v0.1.0-beta.1` published
+     2026-09-05); extraction of the shared engine-side
+     merge/projection is approved to start during the soak window.
   5. Upstream watch: DSH rc line drift (rc.7 exists; we stay pinned at
      rc.6 per the peer-closure pin until a deliberate host bump);
      revisit D-C if rc.7+ ships a pre-execute context seam.
