@@ -2,6 +2,14 @@
 
 ## Resume here
 
+- Host sync plan approved (2026-09-25): `docs/planning/host-sync-plan.md`
+  records verified rc.6 -> 0.1.5-rc.3 plugin-surface parity (upstream tag
+  inspected directly), the approved direction — floor stays rc.6, window
+  declared through 0.1.5-rc.3 (npm `latest`), peer range widened to
+  `>=0.1.0-rc.6 <0.2.0`, dev/CI line rises to 0.1.5-rc.3 — and workstreams
+  HS1–HS5 ending in a 0.2.1 five-package lockstep release. D017 (D004
+  pin-clause revision) precedes implementation; 0.1.7-rc.2 is smoke-only
+  forward-look.
 - Stage: **0.1.0 stable shipped** (2026-08-18). Full arc: promotion
   PR #9 (CI 9/9, staging smoke re-run green) -> ff merge `276f0e7` ->
   signed tag `v0.1.0` -> candidates run bound to the tag revision ->
