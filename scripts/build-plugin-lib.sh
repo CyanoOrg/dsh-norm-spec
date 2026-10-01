@@ -43,11 +43,11 @@ if [ ! -f "$pkg/package.json" ] || [ "${FORCE_MANIFEST:-0}" = "1" ]; then
   "files": ["lib", "skills", "cordis.patch.yml"],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-agent": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-session": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-skill": "^0.1.0-rc.6"
+    "@deepseek-ai/dsh-agent": ">=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1 <0.3.0",
+    "@deepseek-ai/dsh-tools": ">=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1 <0.3.0",
+    "@deepseek-ai/dsh-llm": ">=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1 <0.3.0",
+    "@deepseek-ai/dsh-session": ">=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1 <0.3.0",
+    "@deepseek-ai/dsh-skill": ">=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1 <0.3.0"
   },
   "dsh": {
     "bundle": {
@@ -58,15 +58,29 @@ if [ ! -f "$pkg/package.json" ] || [ "${FORCE_MANIFEST:-0}" = "1" ]; then
 EOF
 fi
 
-# Compile to ESM lib/ using the repo's pinned TypeScript.
-cd "$pkg"
-"$repo/node_modules/.bin/tsc" --outDir lib \
+# Compile to ESM lib/ using the repo's pinned TypeScript. Resolution must
+# start from the repo (not $pkg): the sources import @types/node and the
+# @deepseek-ai/* peer types that only the repo node_modules provides.
+# TS5097 (.ts import specifiers) is expected here — allowImportingTsExtensions
+# requires noEmit, so the emitted specifiers are rewritten to .js below — but
+# any OTHER error is fatal instead of silently shipping a broken lib.
+tsc_out="$("$repo/node_modules/.bin/tsc" --outDir "$pkg/lib" \
   --module nodenext --target es2023 --moduleResolution nodenext \
   --strict --skipLibCheck --verbatimModuleSyntax --lib es2023 \
-  src/index.ts 2>/dev/null || true
-for f in lib/*.js; do
+  "$repo/src/index.ts" 2>&1)" || true
+unexpected="$(printf '%s\n' "$tsc_out" | grep 'error TS' | grep -v 'TS5097' || true)"
+if [ -n "$unexpected" ]; then
+  printf '%s\n' "$unexpected" >&2
+  exit 1
+fi
+for f in "$pkg"/lib/*.js; do
   sed -i '' 's/\.ts"/\.js"/g; s/\.ts'"'"'/\.js'"'"'/g' "$f"
 done
+
+# The dev copy carries no dependencies of its own; link the repo's
+# node_modules so the verification import below (and manual dev runs)
+# resolve the peer packages.
+ln -sfn "$repo/node_modules" "$pkg/node_modules"
 
 # Verify the built entry imports cleanly.
 node -e "import('$pkg/lib/index.js').then(m => {
