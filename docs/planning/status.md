@@ -2,14 +2,17 @@
 
 ## Resume here
 
-- Host sync plan approved (2026-09-25): `docs/planning/host-sync-plan.md`
-  records verified rc.6 -> 0.1.5-rc.3 plugin-surface parity (upstream tag
-  inspected directly), the approved direction — floor stays rc.6, window
-  declared through 0.1.5-rc.3 (npm `latest`), peer range widened to
-  `>=0.1.0-rc.6 <0.2.0`, dev/CI line rises to 0.1.5-rc.3 — and workstreams
-  HS1–HS5 ending in a 0.2.1 five-package lockstep release. D017 (D004
-  pin-clause revision) precedes implementation; 0.1.7-rc.2 is smoke-only
-  forward-look.
+- Host sync plan rev.2 (2026-10-01): `docs/planning/host-sync-plan.md`
+  re-targets the never-executed rev.1 (0.1.5-rc.3) to the new npm
+  `latest` 0.2.0-rc.2. Surface parity re-verified at the
+  `dsh-v0.2.0-rc.2` tag; live evidence: the profile's beta.2-era plugin
+  still operates on the 0.2.0-rc.2 host. Peer range becomes dual-arm
+  `>=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1 <0.3.0` (dsh 0.2.0's plugin
+  compatibility manager makes ranges user-visible); E2E harness needs
+  the 0.2.0 LLM SSE protocol rewrite (in-flight scripts to adopt); local
+  stage build and web-profile plugin install are stale and get refreshed.
+  Workstreams HS1–HS5 end in a 0.2.1 five-package lockstep release; D017
+  (D004 pin-clause revision) still precedes implementation.
 - Stage: **0.1.0 stable shipped** (2026-08-18). Full arc: promotion
   PR #9 (CI 9/9, staging smoke re-run green) -> ff merge `276f0e7` ->
   signed tag `v0.1.0` -> candidates run bound to the tag revision ->
