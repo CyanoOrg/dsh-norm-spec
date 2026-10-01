@@ -2,6 +2,20 @@
 
 ## Resume here
 
+- Stage: **0.2.1 shipped** (2026-10-01). Arc: PR #22 (D017 window, H9
+  injection fix, E2E on the real 0.2.0-rc.2 host), #23 (host-floor CI
+  job, docs window batch, promotion), #24 (bridge intra-workspace dep
+  missed by 8dfe0f0's add list); main-quality raised to 10 required
+  checks including host-floor (D012 governance, applied by owner over
+  API/UI); signed tag `v0.2.1` @ `9dac5ca`; candidates run 36866723569
+  verified (five tarballs, inventory-bound, scoped loader entry);
+  human publish of all five packages (`latest` -> 0.2.1, `beta`
+  unchanged); P4 registry verification green — fresh DSH_HOME, exact
+  0.2.1 from the registry, zero env overrides, injection observed in
+  the model request; GitHub Release attached to the tag. Web profile
+  refreshed beta.2 -> 0.2.1 (H8 closed; compatibility.json records the
+  new pair on the next session boot — running sessions keep the old
+  in-process copy).
 - Stage: **0.2.1 promotion in flight** (2026-10-01, branch
   `chore/promote-0.2.1`). Contents: host-floor CI job (rc.6 pack with
   `--legacy-peer-deps`, locally proven — node_modules flipped to rc.6,

@@ -85,3 +85,9 @@ intentionally left in place through beta.2 (2026-08-17).
 - pnpm (used by `dsh plugin add`) may resolve a dist-tag to a stale
   cached version; pin the exact version in verification installs to
   bypass metadata caches.
+- `npm view` can serve a stale packument for minutes after a publish
+  (CDN edge plus local cache): versions queried immediately may miss
+  the new release and look unpublished. Re-query before concluding a
+  publish failed — the npm website and a forced re-query are
+  authoritative (observed 2026-10-01 on 0.2.1: four packages appeared
+  missing for several minutes after a fully successful publish).
