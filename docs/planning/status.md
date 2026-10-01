@@ -2,6 +2,21 @@
 
 ## Resume here
 
+- WS-HS2/HS3 implemented on `chore/host-sync-0.2.0-rc.2` (2026-10-01):
+  dev line lifted to 0.2.0-rc.2 with dual-arm window peers; H9 closed by
+  the D017 host-compat seam (`src/host-compat.ts`: cross-line event
+  reads, message sources, replace coordinates, creation event) plus
+  outermost pre-step registration — deeper findings: inner
+  (non-prepended) listeners' message additions are silently dropped on
+  0.2.0, and the renderer envelope is DSH_NORM_SPEC_CONTEXT_MULTI_V1
+  (the legacy-string assertions were false-negatives). Verified on the
+  real 0.2.0-rc.2 host: stub / slot / postedit / rescope all PASS;
+  typecheck 0 errors, npm 33/33, cargo fmt+clippy+test green.
+  build-plugin-lib.sh repaired (repo-root resolution, TS5097
+  carve-out, node_modules link). Remaining for the 0.2.1 arc: CI
+  host-floor job, README/AGENTS/ARCHITECTURE/ROADMAP pass, staging
+  smoke + registry E2E, promotion.
+
 - Baseline + D017 recorded (2026-10-01): the host-sync plan goes to
   main through PR #21 (9-check governance; direct main pushes are
   rule-rejected). `chore/host-sync-0.2.0-rc.2` opens with D017 —
