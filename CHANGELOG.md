@@ -3,7 +3,7 @@
 All notable changes are documented here under `[Unreleased]` until release
 preparation.
 
-## [Unreleased]
+## [0.2.1] - 2026-10-01
 
 ### Fixed
 

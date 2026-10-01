@@ -2,6 +2,21 @@
 
 ## Resume here
 
+- Stage: **0.2.1 promotion in flight** (2026-10-01, branch
+  `chore/promote-0.2.1`). Contents: host-floor CI job (rc.6 pack with
+  `--legacy-peer-deps`, locally proven — node_modules flipped to rc.6,
+  typecheck 0 errors, 33/33 unit tests), the docs window batch
+  (README x2 same-commit, AGENTS, ARCHITECTURE, ROADMAP, CHANGELOG),
+  and the version bump to 0.2.1 across all seven manifests plus both
+  locks. Verified on the branch (2026-10-01): npm 33/33; cargo
+  fmt+clippy+test green; staging smoke PASS on the bumped 0.2.1 set;
+  host-floor proven locally (node_modules flipped to rc.6, typecheck 0
+  errors, 33/33); four-suite E2E PASS on the 0.2.1 stage (stub / slot
+  / postedit / rescope); P4-pre packaged smoke PASS — fresh DSH_HOME,
+  staged 0.2.1 tarballs, no env overrides, injection reached the model
+  request on the 0.2.0-rc.2 host. Next: promotion PR, then the SOP arc
+  (signed tag `v0.2.1`, candidates, human publish, P4, GitHub Release).
+
 - WS-HS2/HS3 implemented on `chore/host-sync-0.2.0-rc.2` (2026-10-01):
   dev line lifted to 0.2.0-rc.2 with dual-arm window peers; H9 closed by
   the D017 host-compat seam (`src/host-compat.ts`: cross-line event
