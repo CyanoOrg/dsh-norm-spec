@@ -53,6 +53,12 @@ restored (D013), bridge scan and layout-index surfaces (D014/D015), and
 bounded multi-target context (D016). Enforcement prerequisites are
 unchanged.
 
+Shipped in 0.2.1 (2026-10-01): DSH host compat window through
+0.2.0-rc.2 (D017) — dual-arm peer range, dev/CI line lift, the
+host-compat seam restoring the D008 injection on 0.2.0 hosts (H9),
+and a CI `host-floor` guard; the E2E harness moved to the dsh 0.2.0
+Messages SSE protocol.
+
 Note: single-slot convention replacement — the bounded-occupancy
 follow-up approved in D008 — was implemented and verified on
 2026-08-15 and has shipped in every published version since

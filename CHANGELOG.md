@@ -3,6 +3,41 @@
 All notable changes are documented here under `[Unreleased]` until release
 preparation.
 
+## [Unreleased]
+
+### Fixed
+
+- Convention injection was silently dead on DSH 0.2.0 hosts: rc.6's
+  public `session.events` array no longer exists, `findConventionSlot`
+  threw, and the generic catch swallowed it — published 0.2.0 running on
+  0.2.0 hosts carried no conventions in model context at all (H9). A new
+  host-compat seam (`src/host-compat.ts`, D017) restores the D008
+  single-slot injection across the whole supported window: cross-line
+  session event reads, per-producer message sources, `startSeq`/`endSeq`
+  replace coordinates, the `agent/created` event, and outermost
+  (`prepend`) pre-step registration — without it, 0.2.0 silently drops
+  messages added by inner listeners.
+- `scripts/build-plugin-lib.sh` compiled from the wrong directory:
+  resolution could not find `@types/node` or the peer types, all
+  compiler output was discarded, and the entry verification imported
+  without resolvable peers. It now compiles from the repository root,
+  fails on any non-TS5097 error, and links `node_modules` for the
+  verification import.
+
+### Changed
+
+- DSH host compat window `0.1.0-rc.6` through `0.2.0-rc.2` (D017,
+  superseding the D004 pin): `peerDependencies` use the dual-arm range
+  `>=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1 <0.3.0` (node-semver's
+  prerelease-tuple rule), the dev/CI line tracks 0.2.0-rc.2, and a new
+  `host-floor` CI job installs the rc.6 peer pack and keeps the floor
+  compile- and unit-verified on every push.
+- E2E harness speaks the dsh 0.2.0 DeepSeek/Anthropic Messages SSE
+  protocol, asserts both envelope markers
+  (`DSH_NORM_SPEC_CONTEXT_V1` and the multi-target
+  `DSH_NORM_SPEC_CONTEXT_MULTI_V1`), and reads the v4-generation
+  session log for post-edit assertions.
+
 ## [0.2.0] - 2026-09-03
 
 ### Added

@@ -18,7 +18,8 @@ This adapter delivers convention knowledge the way a cache wants it:
 > the agent's perception at action time, and check edits against them
 > afterward.
 
-Delivery is host-specific. On DSH rc.6 the only injection seam
+Delivery is host-specific. On supported DSH hosts (rc.6 through
+0.2.0-rc.2, D017) the injection seam
 (`agent/pre-step`) writes into the session log, so the reminder is
 durable: injected once, suppressed while unchanged (SHA-1 digest), and —
 when the collected conventions change — **superseded in place through a
@@ -29,9 +30,10 @@ different host in [pi-norm-spec](https://github.com/CyanoOrg/pi-norm-spec)
 — the delivery layer is the host-specific part, and that boundary is the
 point.
 
-**Status: `0.1.0` stable, published to npm as
+**Status: `0.2.1` stable, published to npm as
 [`@cyanoorg/dsh-norm-spec`](https://www.npmjs.com/package/@cyanoorg/dsh-norm-spec).
-DSH host supported: `@deepseek-ai/dsh@0.1.0-rc.6`.**
+DSH host window: `@deepseek-ai/dsh@0.1.0-rc.6` through `0.2.0-rc.2`
+(D017; the rc.6 floor stays CI-verified).**
 
 ## Install
 
@@ -92,7 +94,7 @@ publish, dist-tag policy, post-publish verification) lives in
 
 - `docs/ARCHITECTURE.md` — Rust/TypeScript boundary and DSH host surface
 - `docs/BRIDGE-PROTOCOL.md` — `dsh-norm-spec/bridge/v1` process contract
-- `docs/decisions.md` — decision records D001–D012
+- `docs/decisions.md` — decision records D001–D017
 - `docs/RELEASE-SOP.md` — release and publish procedure
 - `docs/planning/status.md` — live development state
 - `ROADMAP.md` — milestone plan

@@ -19,10 +19,11 @@ intentionally hybrid:
 
 ## Current state
 
-Version `0.1.0-alpha.1` pre-release development identity. The repository
+Version `0.2.1` stable line — the DSH host-sync release. The repository
 was bootstrapped 2026-08-15 by forking the verified pi-norm-spec bridge
-(D001). Public at CyanoOrg/dsh-norm-spec under D010 governance; DSH host
-pinned to `@deepseek-ai/dsh@0.1.0-rc.6`.
+(D001). Public at CyanoOrg/dsh-norm-spec under D010 governance; DSH
+host compat window `0.1.0-rc.6` through `0.2.0-rc.2` (D017), with the
+rc.6 floor kept CI-verified via the `host-floor` job.
 
 Read first:
 

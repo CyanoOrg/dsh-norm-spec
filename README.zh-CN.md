@@ -15,7 +15,8 @@ DeepSeek Harness (dsh) 的 Cordis 插件适配器，为 [norm-spec](https://gith
 > 把作用于当前工作目录的约定分页递送到 agent 行动时刻的感知点，
 > 并在编辑后据此核对。
 
-递送是宿主相关的。DSH rc.6 唯一的注入口（`agent/pre-step`）写入会话
+递送是宿主相关的。受支持的 DSH 宿主（rc.6 至 0.2.0-rc.2，D017）的
+注入口（`agent/pre-step`）写入会话
 日志，因此提醒是 durable 的：注入一次、未变化时被抑制（SHA-1
 digest）、收集到的约定变化时**通过单一槽位原地取代**（`surfaceOp`
  replace）。模型永远不会携带过期约定，占用有界——无论会话跨目录
@@ -23,9 +24,10 @@ digest）、收集到的约定变化时**通过单一槽位原地取代**（`sur
 [pi-norm-spec](https://github.com/CyanoOrg/pi-norm-spec)——递送层是
 宿主相关的部分，这条边界正是意义所在。
 
-**状态：`0.1.0` stable，已发布到 npm：
+**状态：`0.2.1` stable，已发布到 npm：
 [`@cyanoorg/dsh-norm-spec`](https://www.npmjs.com/package/@cyanoorg/dsh-norm-spec)。
-支持的 DSH 宿主：`@deepseek-ai/dsh@0.1.0-rc.6`。**
+DSH 宿主窗口：`@deepseek-ai/dsh@0.1.0-rc.6` 至 `0.2.0-rc.2`
+（D017；rc.6 下限由 CI 持续验证）。**
 
 ## 安装
 
@@ -79,7 +81,7 @@ dist-tag 策略、发布后验证）见 `docs/RELEASE-SOP.md`。
 
 - `docs/ARCHITECTURE.md`——Rust/TypeScript 边界与 DSH 宿主面
 - `docs/BRIDGE-PROTOCOL.md`——`dsh-norm-spec/bridge/v1` 进程契约
-- `docs/decisions.md`——决策记录 D001–D012
+- `docs/decisions.md`——决策记录 D001–D017
 - `docs/RELEASE-SOP.md`——发布与出版流程
 - `docs/planning/status.md`——实时开发状态
 - `ROADMAP.md`——里程碑规划
