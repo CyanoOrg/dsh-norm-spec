@@ -5,9 +5,10 @@
  * — is re-scoped in place to the subdirectory chain (exactly one reminder,
  * containing the subdirectory marker and the `docs/.norm` chain).
  *
- * Prerequisites: /tmp/dsh-e2e/node_modules has @deepseek-ai/dsh@0.1.0-rc.6,
+ * Prerequisites: /tmp/dsh-e2e/node_modules has @deepseek-ai/dsh@0.2.0-rc.2,
  * the plugin is linked into the headless profile, and the local runtime is
- * built (target/release/dsh-norm-bridge + .local-runtime/upstream).
+ * built (.local-runtime/stage/darwin-arm64/bin/dsh-norm-bridge
+ * + .local-runtime/upstream).
  *
  * Run: node scripts/dsh-e2e-rescope.mjs
  */
@@ -46,12 +47,42 @@ let phase = 0; // 0: read under docs/ -> 1: final answer
 function sseFrame(obj) {
   return `data: ${JSON.stringify(obj)}\n\n`;
 }
+// dsh 0.2.0 llm-deepseek speaks the DeepSeek/Anthropic Messages SSE protocol:
+// typed events (message_start -> content_block_* -> message_stop), not
+// OpenAI chat.completion.chunk frames.
+function textTurn(text) {
+  return [
+    { type: "message_start", message: { usage: { input_tokens: 1, output_tokens: 1 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } },
+    { type: "content_block_stop", index: 0 },
+    { type: "message_delta", delta: { stop_reason: "end_turn" } },
+    { type: "message_stop" },
+  ];
+}
+function toolCallTurn(text, name, args, id) {
+  return [
+    { type: "message_start", message: { usage: { input_tokens: 1, output_tokens: 1 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } },
+    { type: "content_block_stop", index: 0 },
+    { type: "content_block_start", index: 1, content_block: { type: "tool_use", id, name, input: {} } },
+    { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(args) } },
+    { type: "content_block_stop", index: 1 },
+    { type: "message_delta", delta: { stop_reason: "tool_use" } },
+    { type: "message_stop" },
+  ];
+}
 
 const server = createServer((req, res) => {
   let body = "";
   req.on("data", (c) => { body += c; });
   req.on("end", () => {
-    if (!req.url.includes("chat")) {
+    // dsh 0.2.0 posts to /v1/messages; route by body shape (a messages
+    // array), not by URL substring.
+    let isChat = false;
+    try { isChat = Array.isArray(JSON.parse(body).messages); } catch { /* not chat */ }
+    if (!isChat) {
       res.writeHead(200, { "content-type": "application/json" });
       res.end("{}");
       return;
@@ -90,32 +121,12 @@ const server = createServer((req, res) => {
     res.writeHead(200, { "content-type": "text/event-stream" });
     let frames;
     if (isTitleRequest) {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "session title" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "stop" }] },
-      ];
+      frames = textTurn("session title");
     } else if (phase === 0) {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "reading the docs" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { tool_calls: [{
-            index: 0, id: "call_1", type: "function",
-            function: { name: "read", arguments: JSON.stringify({ file_path: `${project}/docs/guide.md` }) },
-          }] }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
-      ];
+      frames = toolCallTurn("reading the docs", "read", { file_path: `${project}/docs/guide.md` }, "call_1");
       phase = 1;
     } else {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "done" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "stop" }] },
-      ];
+      frames = textTurn("done");
     }
     res.write(frames.map(sseFrame).join(""));
     res.write("data: [DONE]\n\n");
@@ -156,7 +167,7 @@ const child = spawn("node", [
 ], {
   cwd: project,
   env: { ...process.env, DSH_HOME: home,
-    DSH_NORM_BRIDGE: `${repo}/target/release/dsh-norm-bridge`,
+    DSH_NORM_BRIDGE: `${repo}/.local-runtime/stage/darwin-arm64/bin/dsh-norm-bridge`,
     DSH_NORM_PAYLOAD: `${repo}/.local-runtime/upstream`,
     DEEPSEEK_API_KEY: "stub-key",
     DEEPSEEK_BASE_URL: `http://127.0.0.1:${port}/v1` },

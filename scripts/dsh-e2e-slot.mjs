@@ -97,7 +97,10 @@ const server = createServer((req, res) => {
           : Array.isArray(message.content)
             ? message.content.map((b) => b.text ?? "").join("\n")
             : "";
-        if (text.includes("DSH_NORM_SPEC_CONTEXT_V1")) {
+        // The renderer's envelope marker differs across adapter lines:
+        // legacy single-target DSH_NORM_SPEC_CONTEXT_V1 (<=0.1.x installs)
+        // and multi-target DSH_NORM_SPEC_CONTEXT_MULTI_V1 (D016, 0.2.0+).
+        if (/DSH_NORM_SPEC_CONTEXT(_MULTI)?_V1/.test(text)) {
           nReminders += 1;
           if (text.includes("REV-2-CHANGED")) reminderHasRev2 = true;
           if (text.includes("REV-1 original")) reminderHasRev1 = true;

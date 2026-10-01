@@ -18,6 +18,19 @@ let requestCount = 0;
 function sseFrame(obj) {
   return `data: ${JSON.stringify(obj)}\n\n`;
 }
+// dsh 0.2.0 llm-deepseek speaks the DeepSeek/Anthropic Messages SSE protocol:
+// typed events (message_start -> content_block_* -> message_stop), not
+// OpenAI chat.completion.chunk frames.
+function textTurn(text) {
+  return [
+    { type: "message_start", message: { usage: { input_tokens: 1, output_tokens: 1 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } },
+    { type: "content_block_stop", index: 0 },
+    { type: "message_delta", delta: { stop_reason: "end_turn" } },
+    { type: "message_stop" },
+  ];
+}
 
 const server = createServer((req, res) => {
   let body = "";
@@ -34,7 +47,7 @@ const server = createServer((req, res) => {
           : Array.isArray(message.content)
             ? message.content.map((b) => b.text ?? "").join("\n")
             : "";
-        if (text.includes("<system-reminder>") && sawInjection === null) {
+        if (/DSH_NORM_SPEC_CONTEXT(_MULTI)?_V1/.test(text) && sawInjection === null) {
           sawInjection = text;
         }
       }
@@ -42,16 +55,7 @@ const server = createServer((req, res) => {
     } catch { /* non-JSON */ }
 
     res.writeHead(200, { "content-type": "text/event-stream" });
-    // 0.2.0 SSE contract: every delta frame must carry role on the first
-    // chunk and empty deltas are validated strictly — keep the classic
-    // two-frame shape (role+content, then finish) that all dsh lines accept.
-    const frames = [
-      { id: `stub-${requestCount}`, object: "chat.completion.chunk", created: 1, model: "stub-model",
-        choices: [{ index: 0, delta: { role: "assistant", content: "stub ack" }, finish_reason: null }] },
-      { id: `stub-${requestCount}`, object: "chat.completion.chunk", created: 1, model: "stub-model",
-        choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: "stop" }] },
-    ];
-    res.write(frames.map(sseFrame).join(""));
+    res.write(textTurn("stub ack").map(sseFrame).join(""));
     res.write("data: [DONE]\n\n");
     res.end();
   });
