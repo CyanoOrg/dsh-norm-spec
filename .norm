@@ -49,6 +49,8 @@ Format semantics remain upstream in norm-spec.
 ## Hard constraints
 
 - Never write custom DSH session event types (docs/decisions.md D003).
-- DSH host surface pinned to 0.1.0-rc.6 until D004 reopens.
+- DSH host compat window 0.1.0-rc.6 through 0.2.0-rc.2; the rc.6 floor
+  stays CI-verified and window changes go through docs/decisions.md
+  (D017).
 - Forked bridge code diverges from pi-norm-spec only through recorded
   decisions (D001).

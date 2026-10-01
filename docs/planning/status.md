@@ -2,6 +2,14 @@
 
 ## Resume here
 
+- Baseline + D017 recorded (2026-10-01): the host-sync plan goes to
+  main through PR #21 (9-check governance; direct main pushes are
+  rule-rejected). `chore/host-sync-0.2.0-rc.2` opens with D017 —
+  window rc.6 through 0.2.0-rc.2, dual-arm peer range, H9 runtime
+  shim — plus the root `.norm` window constraint, and captures the
+  three in-flight E2E adaptations as the harness baseline. WS-HS2
+  implementation (version lift, stage regen, typecheck sweep, H9 fix)
+  starts next on the same branch. Stale local soak branch pruned.
 - Host sync plan rev.2 (2026-10-01): `docs/planning/host-sync-plan.md`
   re-targets the never-executed rev.1 (0.1.5-rc.3) to the new npm
   `latest` 0.2.0-rc.2. Surface parity re-verified at the

@@ -468,3 +468,41 @@ handful of active directories per session — and recency ordering is the
 deterministic, meaningful priority for eviction and rendering. Full
 content once with shared markers preserves the complete-content contract
 while making multi-scope occupancy roughly the union, not the sum.
+
+## D017 — DSH host compat window through 0.2.0-rc.2; D004 pin clause superseded
+
+**Decision.** The supported DSH host window is `0.1.0-rc.6` through
+`0.2.0-rc.2`. `peerDependencies` for the five `@deepseek-ai/dsh-*`
+peers become `>=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1 <0.3.0` (cordis
+stays `^4.0.1`); the dev and CI line rises to `0.2.0-rc.2`, with a
+dedicated `host-floor` CI job keeping the rc.6 floor compile- and
+unit-verified on every push. The 0.2.0 session-surface break (H9 in
+`docs/planning/host-sync-plan.md`) is fixed with a runtime shim —
+`snapshotEvents()` when present, else the rc.6 `events` array — so
+every host inside the window keeps full behavior, injection included.
+Anything newer than `0.2.0-rc.2` is smoke-only until the next
+deliberate sync. The sync ships as patch release 0.2.1 in five-package
+lockstep; no runtime protocol changes (`bridgeApi` / `promptContextApi`
+untouched).
+
+**Context.** npm `latest` moved to `0.2.0-rc.2` and the local host
+followed; the rev.1 plan (0.1.5-rc.3) was never executed. Tag-level
+verification found the event and service surface unchanged, but
+instrumented E2E on the real host exposed H9: rc.6's public
+`session.events` no longer exists on 0.2.0, `findConventionSlot`
+throws, and the generic catch silently disables the D008 injection —
+published 0.2.0 on 0.2.0 hosts runs with conventions invisible to the
+model. dsh 0.2.0's plugin compatibility manager surfaces peer ranges
+to users (`compatibility.json`), and node-semver's prerelease-tuple
+rule requires the dual arm for `0.2.0-rc.2` to match at all.
+
+**Rationale.** A window with a shim beats a floor raise: every 0.1.x
+host keeps full behavior, the published compatibility claim stays
+true, and the shim is one small helper behind a single seam. The
+dual-arm range expresses exactly "floor plus releases plus the
+verified 0.2.0-rc line" and deliberately excludes untested
+`0.2.1-rc.x` / `0.3.x` prereleases.
+
+**Supersedes.** D004's pin clause only (D010 already superseded its
+local-visibility clause; publication itself long since happened under
+D011).
