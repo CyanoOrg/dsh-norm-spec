@@ -8,7 +8,7 @@ import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 
 const repo = "/Users/jiangweide/Tuatara/RustPrjs/dsh-norm-spec";
-const bridge = `${repo}/target/release/dsh-norm-bridge`;
+const bridge = `${repo}/.local-runtime/stage/darwin-arm64/bin/dsh-norm-bridge`;
 const payload = `${repo}/.local-runtime/upstream`;
 
 let sawInjection = null;
@@ -42,11 +42,14 @@ const server = createServer((req, res) => {
     } catch { /* non-JSON */ }
 
     res.writeHead(200, { "content-type": "text/event-stream" });
+    // 0.2.0 SSE contract: every delta frame must carry role on the first
+    // chunk and empty deltas are validated strictly — keep the classic
+    // two-frame shape (role+content, then finish) that all dsh lines accept.
     const frames = [
       { id: `stub-${requestCount}`, object: "chat.completion.chunk", created: 1, model: "stub-model",
         choices: [{ index: 0, delta: { role: "assistant", content: "stub ack" }, finish_reason: null }] },
       { id: `stub-${requestCount}`, object: "chat.completion.chunk", created: 1, model: "stub-model",
-        choices: [{ index: 0, delta: {}, finish_reason: "stop" }] },
+        choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: "stop" }] },
     ];
     res.write(frames.map(sseFrame).join(""));
     res.write("data: [DONE]\n\n");

@@ -31,8 +31,34 @@ metadata:
 let chatRequests = 0;
 let phase = 0;
 
+// dsh 0.2.0 llm-deepseek speaks the DeepSeek/Anthropic Messages SSE protocol:
+// every data frame is a typed event (message_start → content_block_* →
+// message_delta → message_stop), not OpenAI chat.completion.chunk.
 function sseFrame(obj) {
   return `data: ${JSON.stringify(obj)}\n\n`;
+}
+function textTurn(text) {
+  return [
+    { type: "message_start", message: { usage: { input_tokens: 1, output_tokens: 1 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } },
+    { type: "content_block_stop", index: 0 },
+    { type: "message_delta", delta: { stop_reason: "end_turn" } },
+    { type: "message_stop" },
+  ];
+}
+function toolCallTurn(text, name, args, id) {
+  return [
+    { type: "message_start", message: { usage: { input_tokens: 1, output_tokens: 1 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } },
+    { type: "content_block_stop", index: 0 },
+    { type: "content_block_start", index: 1, content_block: { type: "tool_use", id, name, input: {} } },
+    { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(args) } },
+    { type: "content_block_stop", index: 1 },
+    { type: "message_delta", delta: { stop_reason: "tool_use" } },
+    { type: "message_stop" },
+  ];
 }
 
 const server = createServer((req, res) => {
@@ -46,13 +72,22 @@ const server = createServer((req, res) => {
       const first = (parsed.messages ?? [])[0];
       isTitleRequest = first !== undefined && typeof first.content === "string"
         && first.content.startsWith("Create a concise title");
-      for (const message of parsed.messages ?? []) {
-        const text = typeof message.content === "string"
-          ? message.content
-          : Array.isArray(message.content)
-            ? message.content.map((b) => b.text ?? "").join("\n")
-            : "";
-        if (text.includes("dsh-norm-spec post-edit")) sawFeedback = true;
+      // Content-driven routing (dsh 0.2.0): the title prompt shape changed and
+      // message ordering interleaves with main-turn requests. Route on how many
+      // tool results the model has already seen — 0 → read, 1 → write, else done.
+      const toolResults = (parsed.messages ?? []).filter(
+        (m) => m.role === "tool" || (Array.isArray(m.content) && m.content.some((b) => b.type === "tool_result")),
+      ).length;
+      if (!isTitleRequest) {
+        phase = toolResults;
+        for (const message of parsed.messages ?? []) {
+          const text = typeof message.content === "string"
+            ? message.content
+            : Array.isArray(message.content)
+              ? message.content.map((b) => b.text ?? "").join("\n")
+              : "";
+          if (text.includes("dsh-norm-spec post-edit")) sawFeedback = true;
+        }
       }
     } catch { /* ignore */ }
     if (!isTitleRequest) {
@@ -63,45 +98,15 @@ const server = createServer((req, res) => {
     res.writeHead(200, { "content-type": "text/event-stream" });
     let frames;
     if (isTitleRequest) {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "title" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "stop" }] },
-      ];
+      frames = textTurn("title");
     } else if (phase === 0) {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "reading" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { tool_calls: [{
-            index: 0, id: "c1", type: "function",
-            function: { name: "read", arguments: JSON.stringify({ file_path: targetPath }) },
-          }] }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
-      ];
+      frames = toolCallTurn("reading", "read", { file_path: targetPath }, "c1");
       phase = 1;
     } else if (phase === 1) {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "writing" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { tool_calls: [{
-            index: 0, id: "c2", type: "function",
-            function: { name: "write", arguments: JSON.stringify({ file_path: targetPath, content: "# Notes\nhello\n" }) },
-          }] }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
-      ];
+      frames = toolCallTurn("writing", "write", { file_path: targetPath, content: "# Notes\nhello\n" }, "c2");
       phase = 2;
     } else {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "done" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "stop" }] },
-      ];
+      frames = textTurn("done");
     }
     res.write(frames.map(sseFrame).join(""));
     res.write("data: [DONE]\n\n");
@@ -129,7 +134,7 @@ const child = spawn("node", [
 ], {
   cwd: project,
   env: { ...process.env, DSH_HOME: home,
-    DSH_NORM_BRIDGE: `${repo}/target/release/dsh-norm-bridge`,
+    DSH_NORM_BRIDGE: `${repo}/.local-runtime/stage/darwin-arm64/bin/dsh-norm-bridge`,
     DSH_NORM_PAYLOAD: `${repo}/.local-runtime/upstream`,
     DEEPSEEK_API_KEY: "stub-key",
     DEEPSEEK_BASE_URL: `http://127.0.0.1:${port}/v1` },
@@ -158,9 +163,18 @@ try {
   const latest = readdirSync(sessRoot)
     .map((name) => ({ name, mtime: statSync(`${sessRoot}/${name}`).mtimeMs }))
     .sort((a, b) => b.mtime - a.mtime)[0]?.name;
-  const zstd = execSync(`zstd -dc ${sessRoot}/${latest}/session.jsonl.zstd`, { maxBuffer: 64 << 20 }).toString();
+  // Session format generations live side by side: session.jsonl.zstd (v0),
+  // session.vN.jsonl.zstd (v>=1, e.g. v4 under dsh 0.2.0). Read the newest
+  // generation file present; prefer the highest version number, fall back
+  // to the legacy name.
+  const sessDir = `${sessRoot}/${latest}`;
+  const files = readdirSync(sessDir)
+    .filter((f) => /^session(\.v\d+)?\.jsonl\.zstd$/.test(f));
+  const genOf = (f) => Number(/\.v(\d+)\./.exec(f)?.[1] ?? 0);
+  const pick = files.sort((a, b) => genOf(b) - genOf(a))[0];
+  const zstd = execSync(`zstd -dc ${sessDir}/${pick}`, { maxBuffer: 64 << 20 }).toString();
   logHasFeedback = zstd.includes("dsh-norm-spec post-edit validation");
-  console.log("[e2e] session log has post-edit feedback:", logHasFeedback);
+  console.log(`[e2e] session log (${pick}) has post-edit feedback:`, logHasFeedback);
 } catch (error) {
   console.log("[e2e] session log check failed:", String(error).slice(0, 120));
 }

@@ -38,26 +38,59 @@ metadata:
 `;
 
 const chatRequests = [];
-let phase = 0; // 0: first answer -> tool call; 1: final answer
+let phase = 0; // derived per-request from tool-result count; kept for logging
 
+// dsh 0.2.0 llm-deepseek speaks the DeepSeek/Anthropic Messages SSE protocol:
+// every data frame is a typed event (message_start → content_block_* →
+// message_delta → message_stop), not OpenAI chat.completion.chunk.
 function sseFrame(obj) {
   return `data: ${JSON.stringify(obj)}\n\n`;
+}
+function textTurn(text) {
+  return [
+    { type: "message_start", message: { usage: { input_tokens: 1, output_tokens: 1 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } },
+    { type: "content_block_stop", index: 0 },
+    { type: "message_delta", delta: { stop_reason: "end_turn" } },
+    { type: "message_stop" },
+  ];
+}
+function toolCallTurn(text, name, args, id) {
+  return [
+    { type: "message_start", message: { usage: { input_tokens: 1, output_tokens: 1 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } },
+    { type: "content_block_stop", index: 0 },
+    { type: "content_block_start", index: 1, content_block: { type: "tool_use", id, name, input: {} } },
+    { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(args) } },
+    { type: "content_block_stop", index: 1 },
+    { type: "message_delta", delta: { stop_reason: "tool_use" } },
+    { type: "message_stop" },
+  ];
 }
 
 const server = createServer((req, res) => {
   let body = "";
   req.on("data", (c) => { body += c; });
   req.on("end", () => {
-    if (!req.url.includes("chat")) {
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end("{}");
-      return;
-    }
+    // dsh 0.2.0 llm-deepseek posts to the Messages endpoint (/v1/messages),
+    // not /chat/completions — route by request body, not URL.
     let nReminders = 0;
     let reminderHasRev2 = false;
     let reminderHasRev1 = false;
+    let isTitleRequest = false;
+    let toolResults = 0;
     try {
       const parsed = JSON.parse(body);
+      const first = (parsed.messages ?? [])[0];
+      isTitleRequest = first !== undefined && typeof first.content === "string"
+        && first.content.startsWith("Create a concise title");
+      // Content-driven routing: route on how many tool results the model has
+      // already seen — immune to request interleaving and title-prompt drift.
+      toolResults = (parsed.messages ?? []).filter(
+        (m) => m.role === "tool" || (Array.isArray(m.content) && m.content.some((b) => b.type === "tool_result")),
+      ).length;
       for (const message of parsed.messages ?? []) {
         const text = typeof message.content === "string"
           ? message.content
@@ -72,63 +105,21 @@ const server = createServer((req, res) => {
       }
     } catch { /* ignore */ }
     chatRequests.push({ nReminders, reminderHasRev2, reminderHasRev1 });
-    console.log(`[stub] chat#${chatRequests.length}: reminders=${nReminders} reminderRev1=${reminderHasRev1} reminderRev2=${reminderHasRev2} phase=${phase}`);
-
-    // Title-generation requests must not consume a phase: detect them by
-    // their dedicated system prompt.
-    let isTitleRequest = false;
-    try {
-      const parsed = JSON.parse(body);
-      const first = (parsed.messages ?? [])[0];
-      isTitleRequest = first !== undefined && typeof first.content === "string"
-        && first.content.startsWith("Create a concise title");
-    } catch { /* ignore */ }
+    console.log(`[stub] chat#${chatRequests.length}: reminders=${nReminders} reminderRev1=${reminderHasRev1} reminderRev2=${reminderHasRev2} toolResults=${toolResults}`);
 
     res.writeHead(200, { "content-type": "text/event-stream" });
     let frames;
     if (isTitleRequest) {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "session title" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "stop" }] },
-      ];
-    } else if (phase === 0) {
+      frames = textTurn("session title");
+    } else if (toolResults === 0) {
       // The fs-observation-policy requires read-before-overwrite: first a
       // read tool call, then (next round) the write.
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "reading first" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { tool_calls: [{
-            index: 0, id: "call_1", type: "function",
-            function: { name: "read", arguments: JSON.stringify({ file_path: normPath }) },
-          }] }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
-      ];
-      phase = 1;
-    } else if (phase === 1) {
+      frames = toolCallTurn("reading first", "read", { file_path: normPath }, "call_1");
+    } else if (toolResults === 1) {
       // Now the write is permitted (the file was observed).
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { tool_calls: [{
-            index: 0, id: "call_2", type: "function",
-            function: { name: "write", arguments: JSON.stringify({ file_path: normPath, content: REV2 }) },
-          }] }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
-      ];
-      phase = 2;
+      frames = toolCallTurn("", "write", { file_path: normPath, content: REV2 }, "call_2");
     } else {
-      frames = [
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: { role: "assistant", content: "done" }, finish_reason: null }] },
-        { id: "s", object: "chat.completion.chunk", created: 1, model: "m",
-          choices: [{ index: 0, delta: {}, finish_reason: "stop" }] },
-      ];
+      frames = textTurn("done");
     }
     res.write(frames.map(sseFrame).join(""));
     res.write("data: [DONE]\n\n");
@@ -156,7 +147,7 @@ const child = spawn("node", [
 ], {
   cwd: project,
   env: { ...process.env, DSH_HOME: home,
-    DSH_NORM_BRIDGE: `${repo}/target/release/dsh-norm-bridge`,
+    DSH_NORM_BRIDGE: `${repo}/.local-runtime/stage/darwin-arm64/bin/dsh-norm-bridge`,
     DSH_NORM_PAYLOAD: `${repo}/.local-runtime/upstream`,
     DEEPSEEK_API_KEY: "stub-key",
     DEEPSEEK_BASE_URL: `http://127.0.0.1:${port}/v1` },
