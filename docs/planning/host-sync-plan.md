@@ -36,7 +36,10 @@ Re-verified at the `dsh-v0.2.0-rc.2` tag for every API we consume:
 | cordis `^4.0.1` | satisfied by vendored 4.0.4 |
 
 448 commits between 0.1.7-rc.2 and 0.2.0-rc.2 contain no
-plugin-surface breaking change (the breaking markers are host-internal).
+plugin-surface breaking change in the event signatures — but one
+runtime-shape break exists beyond this table (`session.events`;
+see H9) and is the reason WS-HS2's typecheck sweep is a hard gate,
+not a formality.
 
 ### H3 — Live evidence: one beta-era plugin build spans five host lines
 
@@ -101,6 +104,33 @@ conventions found" for this repository while `norm_collect` and
 install, not a code defect. Refresh the profile to the published 0.2.1
 (or staged tarball) after release and re-run the live tool smoke.
 
+### H9 — REGRESSION: the D008 single-slot injection is silently dead on 0.2.0 hosts
+
+- Live evidence (2026-10-01, instrumented run against the real
+  0.2.0-rc.2 host): every pre-step reaches the bridge
+  (`promptContextMulti` returns a prompt, digest computed), then
+  `findConventionSlot` throws `TypeError: Cannot read properties of
+  undefined (reading 'length')` — rc.6's public `session.events`
+  array no longer exists on the 0.2.0 `Session` (events are behind
+  `snapshotEvents()`; verified at the tag). The generic catch records
+  `state.failure` and returns, so injection silently never happens.
+- Still working on 0.2.0: native tools, Skill registration, the
+  layout-index section (`systemPrompt.section` -> request `system`
+  param, marker observed live), and post-edit feedback. Only the
+  durable convention reminder channel is dead.
+- Consequence: our published 0.2.0 plugin on 0.2.0 hosts runs with
+  conventions silently absent from model context. On 0.1.x hosts
+  injection still works. The rev.2 "surface unchanged" claim (H2)
+  holds at the event/signature level but missed this runtime-shape
+  change; `npm run typecheck` against 0.2.0-rc.2 types is the
+  systematic finder (WS-HS2).
+- Fix direction: adapt slot detection (and every other
+  `session.events` read) to the 0.2.0 session API. Decision point
+  for D017: runtime shim (`snapshotEvents()` when present, else the
+  rc.6 `events` array) to keep the rc.6 floor honest, or raise the
+  floor to 0.2.0. Recommendation: shim — one small helper, every
+  0.1.x host keeps full behavior, and the window claim stays true.
+
 ## Direction (approved 2026-09-25; ceiling re-targeted 2026-10-01)
 
 - **HS-A Compat window, not a floor raise.** Supported host window:
@@ -143,7 +173,17 @@ Branch `chore/host-sync-0.2.0-rc.2`.
   `0.1.0-alpha.1`; workspace is 0.2.0 — H7).
 - Adopt the three in-flight E2E script adaptations after review
   (LLM stub protocol rewrite; content-driven routing for the title
-  request shape change). They run only after the stage regen.
+  request shape change). Per-script verdict from the 2026-10-01
+  verified runs: `postedit` passes as-is (session-log v4 readback
+  included); `stub` needs the Anthropic Messages SSE rewrite (its
+  OpenAI frames die on the second request: MALFORMED_RESPONSE) and a
+  tighter assertion (any `<system-reminder>` currently
+  false-passes on DSH's own runtime context); `slot` fails for the
+  right reason — it is the regression gate for H9 and must PASS
+  before release.
+- Fix H9 in the adapter: 0.2.0 session-surface access for
+  `findConventionSlot` (and the typecheck sweep for every other
+  rc.6-only shape), with the D017 shim-vs-floor decision applied.
 - Gates: `cargo fmt --check`; clippy `-D warnings`; `cargo test`;
   `npm run typecheck` (compile-time proof of H2 against real
   0.2.0-rc.2 types); `npm test`; staging smoke.
@@ -196,10 +236,33 @@ Branch `chore/host-sync-0.2.0-rc.2`.
 | TypeScript | typecheck + `npm test` green against 0.2.0-rc.2 types |
 | `.norm` | `norm validate .norm --strict`, 0 errors after WS-HS5 |
 | Staging | smoke green on the regenerated stage; bridge prints 0.2.x |
-| E2E | rescope / slot / postedit suites PASS on the 0.2.0-rc.2 host |
+| E2E | rescope / slot / postedit suites PASS on the 0.2.0-rc.2 host; single-slot injection restored (H9) |
 | Registry E2E | staged 0.2.1 boots and injects on 0.2.0-rc.2, zero modifications |
 | CI | 10/10 required checks including `host-floor` |
 | Publish + ops | `latest` -> 0.2.1 on all five; profile refreshed; live scan smoke correct |
+
+## Upstream norm-spec impact (assessed 2026-10-01)
+
+No synchronous adaptation is required in norm-spec for this sync:
+
+- The host boundary never reaches norm-spec: the adapter talks to the
+  sealed payload over the bridge protocol
+  (`dsh-norm-spec/bridge/v1`), which is ours; `productCompat
+  =0.1.0-rc.1` is untouched (WS3 owns the bump when collect/v2 ships
+  post-stable).
+- Verified live with the sealed rc.1 payload: `norm scan` reports
+  the project root correctly
+  (`{"path":".","depth":0,"has_norm":true}`) and multi-directory
+  coverage works. The "No .norm conventions found" misreport observed
+  locally came from the stale beta.2 plugin install (H8), not from
+  scan semantics — no upstream defect.
+- Upstream tracks stay independent and already planned: stable
+  promotion soak (pi beta.1 evidence, window open since 2026-09-05),
+  D020 batch collect (collect/v2, post-stable), and the Host Adapter
+  SDK convergence (pi E3/E4 done, WS-D approved during the soak
+  window). Sequencing note only: land the 0.2.1 host sync first so
+  the SDK convergence extracts from an adapter that actually works
+  on current hosts (H9 fix included).
 
 ## Risks
 
