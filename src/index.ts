@@ -47,6 +47,13 @@ import {
   type MultiPromptContextResult,
 } from "./multi-prompt-context.ts";
 import { projectConventionTarget, pushTarget } from "./target-tracking.ts";
+import {
+  hostSessionEvents,
+  isOwnReminderSource,
+  onAgentSessionStart,
+  pluginReminderSource,
+  replaceSurfaceOp,
+} from "./host-compat.ts";
 
 const PLUGIN_NAME = "dsh-norm-spec";
 const INCOMPLETE_BEHAVIOR = "enforcement is not implemented";
@@ -212,17 +219,11 @@ export function apply(ctx: Context, config: Config = {}): void {
   /** Locate the current convention slot on the session surface (D008). */
   const findConventionSlot = (session: Session) => {
     const surface = new Set<number>(session.surface.nodes);
-    for (let index = session.events.length - 1; index >= 0; index -= 1) {
-      const event = session.events[index];
+    const events = hostSessionEvents(session);
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+      const event = events[index];
       if (event === undefined || event.type !== "user/message") continue;
-      const source = event.data.source;
-      if (
-        source === undefined ||
-        source.kind !== "plugin" ||
-        source.plugin !== PLUGIN_NAME
-      ) {
-        continue;
-      }
+      if (!isOwnReminderSource(event.data.source, PLUGIN_NAME)) continue;
       if (surface.has(event.seq)) {
         return { seq: event.seq, text: reminderTextOf(event.data) };
       }
@@ -310,14 +311,10 @@ export function apply(ctx: Context, config: Config = {}): void {
           "user/message",
           createUserMessage({
             content: [{ type: "text", text: reminder }],
-            source: {
-              kind: "plugin",
-              plugin: PLUGIN_NAME,
-              form: "instructions",
-            },
+            source: pluginReminderSource(PLUGIN_NAME, "instructions"),
           }),
           {
-            surfaceOp: { op: "replace", start: slot.seq, end: slot.seq },
+            surfaceOp: replaceSurfaceOp(slot.seq),
             sourceEventSeqs: [slot.seq],
           },
         );
@@ -328,16 +325,20 @@ export function apply(ctx: Context, config: Config = {}): void {
 
       const message = createUserMessage({
         content: [{ type: "text", text: reminder }],
-        source: {
-          kind: "plugin",
-          plugin: PLUGIN_NAME,
-          form: "instructions",
-        },
+        source: pluginReminderSource(PLUGIN_NAME, "instructions"),
       });
+      // Anchor the reminder after the step's last claimed message when the
+      // identity match holds (rc.6 hands the same instances); on hosts where
+      // the decision re-wraps messages in fresh instances the match is empty,
+      // and a leading insert would be dropped at request assembly — append
+      // at the end instead, the sanctioned plugin shape upstream tests use.
       const lastClaimedIndex = decision.messages.findLastIndex((m) => messages.includes(m));
+      const insertAt = lastClaimedIndex >= 0
+        ? lastClaimedIndex + 1
+        : decision.messages.length;
       return {
         ...decision,
-        messages: decision.messages.toSpliced(lastClaimedIndex + 1, 0, message),
+        messages: decision.messages.toSpliced(insertAt, 0, message),
       };
     } catch (error) {
       if (error instanceof BridgeRequestCancelledError) return decision;
@@ -402,7 +403,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     // effect only clears plugin-level resources (none beyond session maps).
   }, `${PLUGIN_NAME}.lifecycle`);
 
-  ctx.on("agent/session-start", ({ agent }) => {
+  onAgentSessionStart(ctx, ({ agent }) => {
     void startBridge(agent);
   });
 
@@ -410,8 +411,15 @@ export function apply(ctx: Context, config: Config = {}): void {
     void stopBridge(agent);
   });
 
-  ctx.on("agent/pre-step", async ({ agent, messages, signal }, next) =>
-    injectContext(agent, messages, signal, next),
+  // prepend: run as the outermost pre-step listener, the same shape the
+  // official time-context plugin uses — an inner (later-registered) wrapper
+  // observes the returned decision first and strips messages it does not
+  // recognize, silently dropping the injected reminder on 0.2.0 hosts.
+  ctx.on(
+    "agent/pre-step",
+    async ({ agent, messages, signal }, next) =>
+      signal.aborted ? next() : injectContext(agent, messages, signal, next),
+    { prepend: true },
   );
 
   ctx.on("tools/result", (exec, result) => {
@@ -506,12 +514,11 @@ function appendFeedback(
         ...(decision.additionalContexts ?? []),
         createUserMessage({
           content: [{ type: "text", text }],
-          source: {
-            kind: "plugin",
-            plugin: PLUGIN_NAME,
-            form: "notice",
-            summary: "dsh-norm-spec post-edit validation feedback",
-          },
+          source: pluginReminderSource(
+            PLUGIN_NAME,
+            "notice",
+            "dsh-norm-spec post-edit validation feedback",
+          ),
         }),
       ],
     };
