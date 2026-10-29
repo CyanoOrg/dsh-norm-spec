@@ -18,6 +18,8 @@ validator.
 - A system-prompt layout index maps every directory that declares `.norm`
   conventions (with its `metadata.description`). It refreshes after `.norm`
   edits; editing a convention file updates the map on the next step.
+- The layout map is per session: each session's prompt carries its own
+  workspace's map, and agent-less surfaces (Code Mode) carry none.
 - Conventions are injected as a single durable `<system-reminder>` user
   message. When conventions change, the previous reminder is replaced in
   place on the session surface: occupancy stays bounded at one message,
@@ -35,6 +37,13 @@ validator.
   bounded soft feedback, serialized first-in-first-out per session.
   Shell commands, custom tools, and failed edits do not trigger this
   path.
+- These automatic paths rely on host-surfaced tool events, which nested
+  harnesses do not produce: when file tools run nested inside a
+  program-runner tool (for example a `run_code`-style sub-tool), the
+  host reports only the top-level call, so target tracking, layout
+  refresh after `.norm` edits, and post-edit validation cannot fire.
+  In such a harness, run `norm_collect` before working in a new
+  directory and `norm_validate` after editing `.norm` files.
 - Post-edit feedback means the mutation already happened. It does not
   block, roll back, prove project-file compliance, or substitute for
   hard enforcement. Natural-language conventions are prompt guidance.
