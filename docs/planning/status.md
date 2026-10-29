@@ -2,16 +2,22 @@
 
 ## Resume here
 
-- 0.2.2 promotion in flight (2026-10-29, branch `chore/promote-0.2.2`).
-  PR #26 merged to main (fix/layout-session-isolation: D018 per-session
-  layout index + D019 bridge idle recycling; 10-check CI green; local
-  verification on both host lines and all four real-host E2E suites).
-  This branch: version bump across all seven manifests plus both locks,
-  CHANGELOG 0.2.2 entry, ROADMAP shipped note, status record; gates and
-  staging smoke re-run per SOP. Next: promotion PR, then the SOP arc —
-  signed tag `v0.2.2`, candidates, human publish, P4, GitHub Release,
-  web-profile refresh. In parallel (hard-ordered behind the v0.2.2 tag):
-  the WS-D closing swap onto `norm-adapter-engine` =0.1.0 as 0.2.3.
+- WS-D closing swap ready to merge (2026-10-29, branch
+  `refactor/adopt-adapter-sdk`, D020 recorded before implementation):
+  `dsh-norm-engine` becomes the adapter-local shell over the family SDK
+  `norm-adapter-engine` =0.1.0 (extracted from our 0.2.1; engine
+  byte-identical since — `git diff v0.2.1..main -- crates/` empty).
+  Subagent review PASS (0 major; the D020 golden-provenance minor fixed);
+  merge resolved the status/Cargo.lock overlap against the 0.2.2
+  promotion; ships as 0.2.3.
+
+- 0.2.2 promotion merged and tagged (2026-10-29): PR #27 ff-merged to
+  main (`ef6b695`) — PR #26 payload (D018 per-session layout index +
+  D019 bridge idle recycling) plus the seven-manifest version bump, both
+  locks, CHANGELOG/ROADMAP/status records; branch gates + staging smoke
+  green, CI 10/10; signed tag `v0.2.2` cut per SOP. Next per SOP:
+  candidates run bound to the tag, human publish, P4, GitHub Release,
+  web-profile refresh.
 
 - 0.2.2 arc opened (2026-10-29, branch `fix/layout-session-isolation`):
   the layout-index cross-session misbinding incident (verified live —
@@ -173,7 +179,7 @@
   (opened with the pi-norm-spec `v0.1.0-beta.1` publication) gates
   upstream norm-spec changes only, not downstream integration.
   1. WS3 migration trigger: norm-spec stable promotion ships
-     `collect/v2` (D020; semantics already mirror our projection) —
+     `collect/v2` (D021; semantics already mirror our projection) —
      migrate the merge upstream, consume one `collect/v2` call, and
      bump the `productCompat` pin deliberately (plan WS3).
   2. D015 measurement review: after a period of normal use, read the

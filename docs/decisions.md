@@ -619,3 +619,46 @@ clause alongside the unchanged failure clause: after a failed start the
 plugin never silently retries; an idle bridge is recycled and lazily
 restarted on next use — idle recycling is lifecycle management, not
 failure fallback.
+
+## D020 — Adopt the family adapter SDK for the engine-side merge and projection
+
+**Decision.** The engine-side merge/projection moves to the family SDK
+`norm-adapter-engine` (crates.io, exact pin `=0.1.0`;
+CyanoOrg/norm-adapter-sdk D001, mirroring pi-norm-spec D018).
+`dsh-norm-engine` becomes the adapter-local shell: it supplies the
+compile-time `DSH_IDENTITY` (`AdapterIdentity` with product
+`dsh-norm-spec`, the three machine API ids, and the three prompt
+markers), re-exports the SDK surface under unchanged names, and keeps
+`upstream_pin.rs`, `RuntimeIdentity`, and `BRIDGE_API_VERSION`
+adapter-local. Bridge call sites pass `&DSH_IDENTITY` to the three
+projection constructors. This closes the last open item of the WS-D
+convergence plan (pi-norm-spec
+`docs/planning/wsd-sdk-convergence-plan.md`). SDK upgrades happen only
+through a deliberate exact-pin bump decision; cross-adapter coordination
+happens through SDK SemVer, never a direct adapter dependency.
+
+**Context.** dsh-norm-spec D001 forked pi-norm-spec's engine under a
+fork-now-converge-later agreement; the shared Host Adapter SDK waited for
+a second adapter. Both adapters are now published, and the 2026-10-23
+family audit extracted the SDK from dsh-norm-spec `0.2.1` (the richer
+side): `norm_protocol.rs` verbatim, the three projection modules
+identity-parameterized. `git diff v0.2.1..main -- crates/` is empty, so
+the SDK content is byte-current for this repository. pi-norm-spec
+completed its swap and its multi-target/layout adoption through the SDK
+(`0.1.0-beta.3`, 2026-10-24) under byte-identical golden gates, and the
+SDK's cross-identity golden fixtures lock parity with both adapters'
+`0.2.1` output.
+
+**Rationale.** Convergence removes the defect class where a fix lands in
+one fork only — the family's oldest standing risk since D001. Because the
+SDK was extracted from this repository's published `0.2.1` and the
+engine has not drifted since, adoption is verifiable by existing gates
+rather than review trust: the unchanged engine surface, bridge contract
+tests, and the real-host E2E suite, with the SDK's goldens holding
+byte-parity upstream. A thin shell keeps every adapter-local concern
+(upstream pin, runtime identity, bridge protocol) in this repository,
+preserving release independence.
+
+**Documentation.** docs/ARCHITECTURE.md records the engine-side
+provenance change in the same commit as the swap. Sequencing: the swap is
+hard-ordered behind the `v0.2.2` tag and ships as 0.2.3.
