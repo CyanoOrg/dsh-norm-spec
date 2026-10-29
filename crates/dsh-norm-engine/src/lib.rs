@@ -1,8 +1,10 @@
 //! Framework-neutral models for the dsh-norm-spec adapter.
 //!
-//! This crate owns the typed view of normalized upstream responses and future
-//! policy evaluation. It deliberately contains no YAML parser, filesystem
-//! inheritance walker, schema validator, process exit, or hidden network I/O.
+//! The engine-side merge/projection is owned by the family SDK
+//! `norm-adapter-engine` (D020); this crate supplies the dsh identity, the
+//! upstream pin, and the adapter-local protocol surface. It still
+//! deliberately contains no YAML parser, filesystem inheritance walker,
+//! schema validator, process exit, or hidden network I/O.
 
 #![forbid(unsafe_code)]
 
@@ -32,7 +34,8 @@ pub use norm_protocol::{
     NormValidationStatus, NormValidationSummary,
 };
 pub use prompt_context::{
-    MAX_PROMPT_CONTEXT_BYTES, PROMPT_CONTEXT_API_VERSION, PromptContext, PromptContextError,
+    DSH_IDENTITY, MAX_PROMPT_CONTEXT_BYTES, PROMPT_CONTEXT_API_VERSION, PromptContext,
+    PromptContextError,
 };
 pub use upstream_pin::{
     NORM_COLLECT_API, NORM_COMPATIBILITY_API, NORM_CONFORMANCE_API, NORM_CONTRACT_BUNDLE_API,

@@ -8,7 +8,7 @@ use std::{
 };
 
 use dsh_norm_engine::{
-    LayoutIndex, MultiPromptContext, NORM_COLLECT_API, NORM_CONFORMANCE_API,
+    DSH_IDENTITY, LayoutIndex, MultiPromptContext, NORM_COLLECT_API, NORM_CONFORMANCE_API,
     NORM_CONTRACT_BUNDLE_API, NORM_ERROR_API, NORM_SCAN_API, NORM_VALIDATE_API,
     NormCollectResponse, NormCompatibility, NormConformanceReport, NormErrorResponse,
     NormScanResponse, NormValidateResponse, RELEASE_ARTIFACT_API, UPSTREAM_CHECKSUM_FILE,
@@ -32,15 +32,15 @@ const CONTRACT_LOCK_FILE: &str = "contract/bundle.lock.json";
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpstreamError {
-    code: &'static str,
+    code: String,
     message: String,
     path: Option<String>,
 }
 
 impl UpstreamError {
-    fn new(code: &'static str, message: impl Into<String>) -> Self {
+    fn new(code: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
-            code,
+            code: code.into(),
             message: message.into(),
             path: None,
         }
@@ -48,7 +48,7 @@ impl UpstreamError {
 
     /// Construct a stable error at an external command boundary.
     #[must_use]
-    pub fn external(code: &'static str, message: impl Into<String>) -> Self {
+    pub fn external(code: impl Into<String>, message: impl Into<String>) -> Self {
         Self::new(code, message)
     }
 
@@ -59,8 +59,8 @@ impl UpstreamError {
 
     /// Stable machine-readable error code.
     #[must_use]
-    pub const fn code(&self) -> &'static str {
-        self.code
+    pub fn code(&self) -> &str {
+        &self.code
     }
 
     /// Human-readable diagnostic.
@@ -625,7 +625,7 @@ impl UpstreamRuntime {
                 cancellation,
             )?);
         }
-        LayoutIndex::from_scan(scan.root.clone(), &scan, &collects)
+        LayoutIndex::from_scan(&DSH_IDENTITY, scan.root.clone(), &scan, &collects)
             .map_err(|error| UpstreamError::external(error.code(), error.message()).into())
     }
 
@@ -649,7 +649,7 @@ impl UpstreamRuntime {
             .first()
             .map(|collection| collection.root.clone())
             .unwrap_or_default();
-        MultiPromptContext::from_collections(root_marker, &collections)
+        MultiPromptContext::from_collections(&DSH_IDENTITY, root_marker, &collections)
             .map_err(|error| UpstreamError::external(error.code(), error.message()).into())
     }
 

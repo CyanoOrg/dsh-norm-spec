@@ -54,12 +54,17 @@ event makes the entire session log unloadable. dsh-norm-spec therefore:
 
 ## `dsh-norm-engine`
 
-Consumes normalized, versioned norm-spec data and calculates active prompt
-context. It does not parse YAML or traverse `.norm` inheritance itself.
-It produces `dsh-norm-spec/prompt-context/v1`: a deterministic, bounded
-projection containing the complete normalized frontmatter and Markdown
-body for every collected convention, most-specific-first, failing rather
-than truncating.
+Adapter-local shell over the family SDK `norm-adapter-engine` (exact pin
+`=0.1.0`, D020): this crate supplies the compile-time `DSH_IDENTITY` —
+product namespace, machine API ids, and prompt markers — and re-exports
+the shared merge/projection surface under unchanged names. The shared
+engine consumes normalized, versioned norm-spec data and calculates
+active prompt context (single- and multi-target, layout index); neither
+parses YAML or traverses `.norm` inheritance. The projection remains
+`dsh-norm-spec/prompt-context/v1`: deterministic, bounded, complete
+normalized frontmatter and Markdown body for every collected convention,
+most-specific-first, failing rather than truncating. `upstream_pin.rs`,
+`RuntimeIdentity`, and `BRIDGE_API_VERSION` stay adapter-local.
 
 ## `dsh-norm-bridge`
 
@@ -73,10 +78,11 @@ collect, promptContext, validate, cancel, shutdown) with the
 
 The bridge is forked from pi-norm-spec's `pi-norm-bridge`/`pi-norm-engine`
 with mechanical namespace renaming (pi-norm-spec → dsh-norm-spec, prompt
-context API id, error-code prefixes). Divergence is intentional and
-recorded in docs/decisions.md; when the Host Adapter SDK is extracted
-(2026-08-14 strategy discussion §7), both adapters converge on one shared
-implementation.
+context API id, error-code prefixes). The engine-side merge/projection
+converged on the family SDK `norm-adapter-engine` (D020; extracted from
+this repository's 0.2.1 by norm-adapter-sdk D001) — bridge, sealing,
+upstream pin, and host injection stay adapter-local, and adapter
+divergence is recorded in docs/decisions.md.
 
 ## Upstream runtime
 
