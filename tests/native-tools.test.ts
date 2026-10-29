@@ -13,7 +13,9 @@ function stubClient(response: unknown): BridgeClient {
 }
 
 function resolverFor(client: BridgeClient): ClientResolver {
-  return async () => client;
+  // Lease form (D019): the resolver hands out a leased client; release is
+  // a no-op for the stub.
+  return async () => ({ client, release: () => undefined });
 }
 
 const exec = { agent: undefined, signal: new AbortController().signal } as unknown as ToolRunContext;

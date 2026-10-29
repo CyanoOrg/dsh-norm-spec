@@ -14,8 +14,14 @@ import { parseValidationResponse, type ValidationResponse } from "./validation-f
 
 const MAX_TOOL_TEXT_BYTES = 16 * 1024;
 
-/** Adapter callback resolving the bridge client for one invocation. */
-export type ClientResolver = (exec: ToolRunContext) => Promise<BridgeClient>;
+/** A bridge client held under an idle lease (D019); release when done. */
+export interface BridgeLease {
+  client: BridgeClient;
+  release: () => void;
+}
+
+/** Adapter callback resolving a leased bridge client for one invocation. */
+export type ClientResolver = (exec: ToolRunContext) => Promise<BridgeLease>;
 
 interface ValidateValue {
   ok: boolean;
@@ -90,14 +96,18 @@ async function withClient<T>(
   exec: ToolRunContext,
   run: (client: BridgeClient) => Promise<T>,
 ): Promise<T> {
-  const client = await resolve(exec);
-  if (client.getStatus().state !== "ready") {
-    throw new BridgeClientError(
-      "dsh-norm-spec/client/tool-unavailable",
-      "the verified bridge is not ready",
-    );
+  const { client, release } = await resolve(exec);
+  try {
+    if (client.getStatus().state !== "ready") {
+      throw new BridgeClientError(
+        "dsh-norm-spec/client/tool-unavailable",
+        "the verified bridge is not ready",
+      );
+    }
+    return await run(client);
+  } finally {
+    release();
   }
-  return run(client);
 }
 
 function renderText(lines: string[]): string {

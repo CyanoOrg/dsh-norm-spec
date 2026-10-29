@@ -13,7 +13,7 @@
 import { relative } from "node:path";
 
 import type { Context } from "@deepseek-ai/cordis";
-import type { } from "@deepseek-ai/dsh-system-prompt";
+import type { AssembleContext } from "@deepseek-ai/dsh-system-prompt";
 import type { Agent, PreStepDecision } from "@deepseek-ai/dsh-agent";
 import type { Session } from "@deepseek-ai/dsh-session";
 import type { PostToolDecision, ToolExecution, ToolExecutionResult } from "@deepseek-ai/dsh-tools";
@@ -72,6 +72,22 @@ export const LAYOUT_SECTION_ORDER = 150;
 export interface Config {
   /** Explicit launch for the bundled bridge; defaults to the packaged runtime. */
   launch?: BridgeLaunch;
+  /**
+   * Idle TTL before a session/ambient bridge reaps itself (D019).
+   * Defaults to 10 minutes; 0 disables recycling.
+   */
+  bridgeIdleTtlMs?: number;
+}
+
+/** Default bridge idle TTL (D019): reaps quiet sessions' bridges. */
+const DEFAULT_BRIDGE_IDLE_TTL_MS = 600_000;
+
+/** This session's own layout snapshot (D018). */
+interface LayoutSnapshot {
+  /** Engine-rendered prompt; empty until the first refresh lands. */
+  text: string;
+  /** Root-relative declaring dirs, for the D015 first-touch measurement. */
+  entryPaths: Set<string>;
 }
 
 interface SessionState {
@@ -89,6 +105,16 @@ interface SessionState {
   layoutIndexDigest: string | undefined;
   layoutIndexStale: boolean;
   visitedTargets: Set<string>;
+  /** Current agent object for this session — the assembly scope key (D018). */
+  scopeAgent: object | undefined;
+  /** This session's layout snapshot; undefined until first refresh (D018). */
+  layout: LayoutSnapshot | undefined;
+  /** Armed idle-reap timer handle; undefined when disarmed (D019). */
+  idleTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Open bridge leases: native tools and plugin-issued requests (D019). */
+  idleLeases: number;
+  /** Queued-but-not-settled validation-tail items (D019). */
+  idleQueued: number;
 }
 
 /**
@@ -99,10 +125,11 @@ interface SessionState {
 export function apply(ctx: Context, config: Config = {}): void {
   const sessions = new WeakMap<object, SessionState>();
 
-  // Plugin-level layout-index state (D015): one global section reflecting the
-  // most recently refreshed project layout; providers re-read it each assembly.
-  let layoutSectionText = "";
-  let layoutEntryPaths = new Set<string>();
+  // Layout-index provider index (D018): the assembly scope key — the agent
+  // object itself on both host lines — resolves to that session's own
+  // state. Replaces the D015 plugin-level singletons that served one
+  // session's map to every session in a multi-session host.
+  const stateByScopeAgent = new WeakMap<object, SessionState>();
 
   // Plugin-level fallback bridge for agent-less tool calls (Code Mode,
   // harnesses, direct registry consumers). Agent sessions keep their own
@@ -127,10 +154,80 @@ export function apply(ctx: Context, config: Config = {}): void {
         layoutIndexDigest: undefined,
         layoutIndexStale: false,
         visitedTargets: new Set(["."]),
+        scopeAgent: agent,
+        layout: undefined,
+        idleTimer: undefined,
+        idleLeases: 0,
+        idleQueued: 0,
       };
       sessions.set(agent.session, state);
+    } else if (state.scopeAgent !== agent) {
+      // Same session object, fresh agent object (resume/clear/compaction on
+      // a resident session): re-key the provider index and force one
+      // re-fetch. The snapshot lives on the state, so the provider serves
+      // the same session's correct map through the new key without a gap —
+      // same session ⇒ same root ⇒ same map (D018).
+      state.scopeAgent = agent;
+      state.layoutIndexStale = true;
     }
+    stateByScopeAgent.set(agent, state);
     return state;
+  };
+
+  const bridgeIdleTtlMs = config.bridgeIdleTtlMs ?? DEFAULT_BRIDGE_IDLE_TTL_MS;
+
+  /** Arm (or re-arm) this state's idle-reap timer; slides on activity (D019). */
+  const armIdleTimer = (state: SessionState): void => {
+    if (state.idleTimer !== undefined) clearTimeout(state.idleTimer);
+    state.idleTimer = undefined;
+    if (state.disposed || bridgeIdleTtlMs <= 0) return;
+    const timer = setTimeout(() => void reapIfIdle(state), bridgeIdleTtlMs);
+    timer.unref();
+    state.idleTimer = timer;
+  };
+
+  const noteActivity = (state: SessionState): void => {
+    armIdleTimer(state);
+  };
+
+  /** Whether any work holds this state's bridge: startup, leases, or queued validation (D019). */
+  const busy = (state: SessionState): boolean =>
+    state.starting !== undefined || state.idleLeases > 0 || state.idleQueued > 0;
+
+  const reapIfIdle = async (state: SessionState): Promise<void> => {
+    state.idleTimer = undefined;
+    if (state.disposed || state.client === undefined) return;
+    if (busy(state)) {
+      armIdleTimer(state);
+      return;
+    }
+    // Detach first so new callers lazily restart while the old client
+    // shuts down; disposed stays false — that flag is permanent disposal.
+    const client = state.client;
+    state.client = undefined;
+    if (client.getStatus().state !== "failed") {
+      await client.shutdown().catch(() => undefined);
+    }
+  };
+
+  const acquireLease = (state: SessionState): void => {
+    state.idleLeases += 1;
+  };
+
+  /** Idempotent lease release; always re-arms the idle timer (D019). */
+  const releaseLease = (state: SessionState): void => {
+    if (state.idleLeases > 0) state.idleLeases -= 1;
+    noteActivity(state);
+  };
+
+  /** Run one plugin-issued bridge request under a lease so busy() sees it (D019). */
+  const withLease = async <T>(state: SessionState, run: () => Promise<T>): Promise<T> => {
+    acquireLease(state);
+    try {
+      return await run();
+    } finally {
+      releaseLease(state);
+    }
   };
 
   const startBridgeFor = (state: SessionState): Promise<void> => {
@@ -155,6 +252,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           if (!state.disposed) state.failure = asBridgeError(error);
         } finally {
           state.starting = undefined;
+          noteActivity(state);
         }
       })();
     }
@@ -181,6 +279,11 @@ export function apply(ctx: Context, config: Config = {}): void {
         layoutIndexDigest: undefined,
         layoutIndexStale: false,
         visitedTargets: new Set(["."]),
+        scopeAgent: undefined,
+        layout: undefined,
+        idleTimer: undefined,
+        idleLeases: 0,
+        idleQueued: 0,
       };
       ctx.effect(() => () => {
         const state = ambientState;
@@ -188,6 +291,8 @@ export function apply(ctx: Context, config: Config = {}): void {
         ambientStarting = undefined;
         if (state !== undefined) {
           state.disposed = true;
+          if (state.idleTimer !== undefined) clearTimeout(state.idleTimer);
+          state.idleTimer = undefined;
           const client = state.client;
           state.client = undefined;
           if (client !== undefined && client.getStatus().state !== "failed") {
@@ -208,6 +313,8 @@ export function apply(ctx: Context, config: Config = {}): void {
   const stopBridge = async (agent: Agent): Promise<void> => {
     const state = stateFor(agent);
     state.disposed = true;
+    if (state.idleTimer !== undefined) clearTimeout(state.idleTimer);
+    state.idleTimer = undefined;
     state.validationTail = Promise.resolve();
     const client = state.client;
     state.client = undefined;
@@ -248,15 +355,18 @@ export function apply(ctx: Context, config: Config = {}): void {
   ): Promise<void> => {
     if (!state.layoutIndexStale && state.layoutIndexDigest !== undefined) return;
     try {
-      const value = await client.request<unknown>("layoutIndex", { root: cwd }, signal);
+      const value = await withLease(state, () =>
+        client.request<unknown>("layoutIndex", { root: cwd }, signal));
       const index = parseLayoutIndex(value);
       const digest = digestText(index.prompt ?? "");
       const changed = digest !== state.layoutIndexDigest;
       state.layoutIndexDigest = digest;
       state.layoutIndexStale = false;
       if (!changed) return;
-      layoutSectionText = index.prompt ?? "";
-      layoutEntryPaths = new Set(index.entries.map((entry) => entry.path));
+      state.layout = {
+        text: index.prompt ?? "",
+        entryPaths: new Set(index.entries.map((entry) => entry.path)),
+      };
     } catch (error) {
       if (error instanceof BridgeRequestCancelledError) return;
       state.failure = asBridgeError(error);
@@ -283,11 +393,12 @@ export function apply(ctx: Context, config: Config = {}): void {
     await refreshLayoutIndex(state, client, cwd, signal);
 
     try {
-      const value = await client.request<unknown>(
-        "promptContextMulti",
-        { root: cwd, targets: state.activeTargets },
-        signal,
-      );
+      const value = await withLease(state, () =>
+        client.request<unknown>(
+          "promptContextMulti",
+          { root: cwd, targets: state.activeTargets },
+          signal,
+        ));
       const context = parseMultiPromptContext(value);
       state.lastContext = context;
       if (context.prompt === null) {
@@ -366,6 +477,9 @@ export function apply(ctx: Context, config: Config = {}): void {
     }
     const cwd = agent.session.header.cwd ?? process.cwd();
     const run = async (): Promise<PostToolDecision> => {
+      // A mid-tool-call idle reap must not surface as a false validation
+      // failure: restart lazily exactly like the pre-step path does (D019).
+      await startBridgeFor(state);
       const client = state.client;
       if (client === undefined || client.getStatus().state !== "ready") {
         const failure =
@@ -390,10 +504,19 @@ export function apply(ctx: Context, config: Config = {}): void {
         return appendFeedback(decision, presentValidationFailure(failure).text);
       }
     };
+    // Counted at ENQUEUE so a reap can never fire between two FIFO tail
+    // items; the paired decrement lives in the settled continuation (D019).
+    state.idleQueued += 1;
     const settled = state.validationTail.then(run, run);
     state.validationTail = settled.then(
-      () => undefined,
-      () => undefined,
+      () => {
+        state.idleQueued -= 1;
+        noteActivity(state);
+      },
+      () => {
+        state.idleQueued -= 1;
+        noteActivity(state);
+      },
     );
     return settled;
   };
@@ -438,8 +561,14 @@ export function apply(ctx: Context, config: Config = {}): void {
     const agent = exec.agent;
     const state = agent !== undefined ? stateFor(agent) : await ambientBridge();
     if (agent !== undefined) await startBridge(agent);
+    // Lease acquisition and the client read share one synchronous block —
+    // no reap can slip between them; every throwing path below decrements
+    // before throwing, because a stranded lease would pin busy() forever
+    // and silently disable recycling (D019).
+    state.idleLeases += 1;
     const client = state.client;
     if (client === undefined || client.getStatus().state !== "ready") {
+      releaseLease(state);
       throw new BridgeClientError(
         "dsh-norm-spec/client/tool-unavailable",
         agent !== undefined
@@ -447,7 +576,13 @@ export function apply(ctx: Context, config: Config = {}): void {
           : "no ready ambient bridge for this tool call",
       );
     }
-    return client;
+    let released = false;
+    const release = (): void => {
+      if (released) return;
+      released = true;
+      releaseLease(state);
+    };
+    return { client, release };
   };
 
   ctx.tools.register(normValidateTool(resolveToolClient));
@@ -458,13 +593,21 @@ export function apply(ctx: Context, config: Config = {}): void {
   // package file. rank 250 — project roots override, uninstall removes.
   ctx.skills.register(loadSkillRegistration());
 
-  // Layout-index section (D015): registered in the plugin's own scope; the
-  // provider re-reads the shared cache at every assembly, so refreshes never
-  // re-register and the section contributes nothing until the first map lands.
+  // Layout-index section (D015 registration, D018 resolution): one
+  // globally registered section whose provider resolves the assembly
+  // scope — the agent object itself on both host lines — to that
+  // session's own snapshot. Agent-less assemblies carry no map at all;
+  // refreshes never re-register and a fresh session contributes nothing
+  // until its first map lands. The provider is total (WeakMap.get +
+  // optional chaining), satisfying the assembly's no-throw contract.
   ctx.systemPrompt.section({
     name: LAYOUT_SECTION_NAME,
     order: LAYOUT_SECTION_ORDER,
-    text: () => layoutSectionText,
+    text: (context: AssembleContext): string => {
+      const scope = context.scope;
+      if (scope === undefined) return "";
+      return stateByScopeAgent.get(scope)?.layout?.text ?? "";
+    },
   });
 
   /** D015 measurement: plugin-log only, never the session log. */
@@ -474,7 +617,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     state.visitedTargets.add(target);
     const cwd = exec.agent?.session.header.cwd ?? process.cwd();
     const relativeTarget = relative(cwd, target) || ".";
-    const declaresNorm = layoutEntryPaths.has(relativeTarget);
+    const declaresNorm = state.layout?.entryPaths.has(relativeTarget) ?? false;
     ctx.logger.debug(
       `dsh-norm-spec: first-touch tool=${String(exec.name)} dir=${relativeTarget} declaresNorm=${declaresNorm}`,
     );
