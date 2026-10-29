@@ -54,3 +54,12 @@ Format semantics remain upstream in norm-spec.
   (D017).
 - Forked bridge code diverges from pi-norm-spec only through recorded
   decisions (D001).
+
+## Workflow rules
+
+- Keep `main` linear: resolve a branch's overlap with `main` by
+  rebasing, never by merging `main` into the branch.
+- Every user-visible `feat:`/`fix:` change lands its CHANGELOG entry
+  under `[Unreleased]` in the same PR.
+- Non-trivial PRs get an independent review pass with a written report
+  before human review. (Full workflow: AGENTS.md.)
