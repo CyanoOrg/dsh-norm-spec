@@ -91,6 +91,10 @@ const server = createServer((req, res) => {
     let hasDocsScope = false;
     let hasRootScope = false;
     let hasLayoutIndex = false;
+    // D018 guard: the layout block must carry THIS project's own root
+    // description (engine renders "- {path}: {description}"), never
+    // another session's map.
+    let hasOwnRootMarker = false;
     try {
       const parsed = JSON.parse(body);
       for (const message of parsed.messages ?? []) {
@@ -107,8 +111,9 @@ const server = createServer((req, res) => {
       }
     } catch { /* ignore */ }
     hasLayoutIndex = body.includes("DSH_NORM_LAYOUT_INDEX_V1");
-    chatRequests.push({ nReminders, hasDocsScope, hasRootScope, hasLayoutIndex });
-    console.log(`[stub] chat#${chatRequests.length}: reminders=${nReminders} root=${hasRootScope} docs=${hasDocsScope} index=${hasLayoutIndex} phase=${phase}`);
+    hasOwnRootMarker = body.includes("- .: ROOT-ONLY-MARKER");
+    chatRequests.push({ nReminders, hasDocsScope, hasRootScope, hasLayoutIndex, hasOwnRootMarker });
+    console.log(`[stub] chat#${chatRequests.length}: reminders=${nReminders} root=${hasRootScope} docs=${hasDocsScope} index=${hasLayoutIndex} ownRoot=${hasOwnRootMarker} phase=${phase}`);
 
     let isTitleRequest = false;
     try {
@@ -191,8 +196,8 @@ const last = chatRequests[chatRequests.length - 1];
 const pass = first !== undefined && last !== undefined
   && first.nReminders === 1 && first.hasRootScope && !first.hasDocsScope
   && last.nReminders === 1 && last.hasDocsScope && last.hasRootScope
-  && last.hasLayoutIndex;
+  && last.hasLayoutIndex && last.hasOwnRootMarker;
 console.log("[e2e] target re-scoping:", pass ? "PASS" : "FAIL",
   `(first: reminders=${first?.nReminders} root=${first?.hasRootScope} docs=${first?.hasDocsScope};`
-  + ` last: reminders=${last?.nReminders} root=${last?.hasRootScope} docs=${last?.hasDocsScope} index=${last?.hasLayoutIndex})`);
+  + ` last: reminders=${last?.nReminders} root=${last?.hasRootScope} docs=${last?.hasDocsScope} index=${last?.hasLayoutIndex} ownRoot=${last?.hasOwnRootMarker})`);
 process.exit(pass ? 0 : 1);
