@@ -1,3 +1,4 @@
+import { appendFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 
 const apiVersion = "dsh-norm-spec/bridge/v1";
@@ -105,6 +106,9 @@ if (mode === "startup-failure") {
     payload: { tag: "v0.1.0-rc.1", target: "test-target" },
     compatibility: { apiVersion: "norm-spec/compatibility/v1" },
   });
+  if (process.env.FAKE_BRIDGE_PID_FILE) {
+    appendFileSync(process.env.FAKE_BRIDGE_PID_FILE, `${process.pid}\n`);
+  }
   if (mode === "crash-after-ready") {
     setTimeout(() => process.exit(19), 20);
   }
@@ -241,7 +245,23 @@ if (mode === "startup-failure") {
           norm_coverage: { total_dirs: 3, dirs_with_norm: 2, ratio: 0.667 },
         },
       });
+    } else if (request.method === "layoutIndex" && mode === "pause-layout") {
+      // Lease-protection scenarios: never respond, holding the caller's
+      // bridge lease open.
+      active = request.id;
     } else if (request.method === "layoutIndex") {
+      // Root-dependent canned maps so dual-workspace tests can tell the
+      // sessions apart; any other root keeps the historical default.
+      const root = String(request.params.root ?? ".");
+      const marker = root.includes("ws-a")
+        ? "LAYOUT-A-ROOT"
+        : root.includes("ws-b")
+          ? "LAYOUT-B-ROOT"
+          : "root governance";
+      const entries = marker === "root governance"
+        ? [{ path: ".", description: "root governance" }, { path: "crates/engine", description: null }]
+        : [{ path: ".", description: marker }];
+      const lines = entries.map((entry) => (entry.description === null ? `- ${entry.path}` : `- ${entry.path}: ${entry.description}`));
       emit({
         apiVersion,
         type: "response",
@@ -249,13 +269,9 @@ if (mode === "startup-failure") {
         status: "ok",
         result: {
           apiVersion: "dsh-norm-spec/layout-index/v1",
-          root: ".",
-          entries: [
-            { path: ".", description: "root governance" },
-            { path: "crates/engine", description: null },
-          ],
-          prompt:
-            "DSH_NORM_LAYOUT_INDEX_V1\nmap\n- .: root governance\n- crates/engine\nEND_DSH_NORM_LAYOUT_INDEX_V1",
+          root,
+          entries,
+          prompt: `DSH_NORM_LAYOUT_INDEX_V1\nmap\n${lines.join("\n")}\nEND_DSH_NORM_LAYOUT_INDEX_V1`,
         },
       });
     } else if (request.method === "cancel") {

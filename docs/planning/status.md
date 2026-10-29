@@ -12,7 +12,11 @@
   native-tool leases + post-execute lazy restart) recorded before
   implementation per update order; ARCHITECTURE Process model carries
   the lifecycle clause. Implementation + tests (dual-scope, bridge-idle,
-  rescope layout assertion) next, then the 0.2.2 promotion arc.
+  rescope layout assertion) landed and verified: typecheck 0 errors and
+  37/37 tests on BOTH host lines (dev 0.2.0-rc.2 and the rc.6 floor pack),
+  cargo fmt/clippy/test green, and all four real-host E2E suites PASS on
+  0.2.0-rc.2 — rescope now also asserts the session's OWN root description
+  in the layout block (D018). Next: PR, then the 0.2.2 promotion arc.
 
 - Stage: **0.2.1 shipped** (2026-10-01). Arc: PR #22 (D017 window, H9
   injection fix, E2E on the real 0.2.0-rc.2 host), #23 (host-floor CI
