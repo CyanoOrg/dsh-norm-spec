@@ -3,6 +3,19 @@
 All notable changes are documented here under `[Unreleased]` until release
 preparation.
 
+## [0.2.3] - 2026-10-29
+
+### Changed
+
+- Engine-side merge/projection is now owned by the family SDK
+  `norm-adapter-engine` (exact pin `=0.1.0`, D020; extracted from this
+  repository's 0.2.1 by norm-adapter-sdk D001). `dsh-norm-engine` becomes
+  the adapter-local shell supplying the compile-time `DSH_IDENTITY` and
+  re-exporting the SDK surface under unchanged names; the upstream pin,
+  runtime identity, and bridge protocol stay adapter-local. Wire output
+  is byte-stable (SDK cross-identity golden fixtures). Closes the WS-D
+  family convergence plan's final item.
+
 ## [0.2.2] - 2026-10-29
 
 ### Fixed

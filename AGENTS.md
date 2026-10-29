@@ -72,7 +72,10 @@ regression suite is a merge gate, not proof that a release is complete.
 Use trunk-based development. `main` stays releasable. Use short-lived
 `feat/*`, `fix/*`, `docs/*`, `refactor/*`, `test/*`, and `chore/*`
 branches. Bootstrap commits may land directly on `main`; subsequent
-non-trivial work uses a short-lived branch.
+non-trivial work uses a short-lived branch. `main` requires linear
+history (the `main-integrity` ruleset rejects merge commits, observed
+2026-10-29): resolve a branch's overlap with promoted `main` by
+rebasing, never by merging `main` into the branch.
 
 Use Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`,
 `chore:`, `perf:`, `build:`, and `ci:`. Each commit has one semantic

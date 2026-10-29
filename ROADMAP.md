@@ -43,9 +43,10 @@
 
 ## 0.2 — Adapter convergence and enforcement prerequisites
 
-- Host Adapter SDK convergence with pi-norm-spec: extraction after pi's
-  E3/E4 complete; this repository's 0.1.0 is the second-adapter
-  evidence the extraction was waiting for.
+- Host Adapter SDK convergence with pi-norm-spec: **shipped** — the
+  extraction became the family SDK `norm-adapter-engine`
+  (norm-adapter-sdk D001, extracted from this repository's 0.2.1); this
+  repository swapped onto it as `=0.1.0` (D020), closing the WS-D plan.
 - Enforcement reopened only under D006's prerequisites.
 
 Shipped in 0.2.0 (2026-09-03): directory-scoped convention paging
@@ -62,6 +63,10 @@ Messages SSE protocol.
 Shipped in 0.2.2 (2026-10-29): per-session layout index (D018,
 Amends D015's global registration — the cross-session misbinding
 incident) and bridge idle recycling with request leases (D019).
+
+Shipped in 0.2.3 (2026-10-29): the WS-D closing swap (D020) — the
+engine-side merge/projection now comes from the family SDK
+`norm-adapter-engine` =0.1.0 with byte-stable output.
 
 Note: single-slot convention replacement — the bounded-occupancy
 follow-up approved in D008 — was implemented and verified on

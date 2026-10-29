@@ -91,3 +91,10 @@ intentionally left in place through beta.2 (2026-08-17).
   publish failed — the npm website and a forced re-query are
   authoritative (observed 2026-10-01 on 0.2.1: four packages appeared
   missing for several minutes after a fully successful publish).
+- The packument can also be complete while the tarball blobs lag: on
+  0.2.2 (2026-10-29) two of five tarball URLs 404'd for ~5 minutes
+  after a fully successful publish (dist records and registry
+  signatures already present), blocking `pnpm install` with
+  `ERR_PNPM_FETCH_404`. Both recovered without intervention — probe
+  the tarball URL directly and wait before treating it as a failed
+  publish.

@@ -2,6 +2,18 @@
 
 ## Resume here
 
+- 0.2.3 promotion in flight (2026-10-29, branch
+  `chore/promote-0.2.3`). PR #28 merged to main (linear rebase after
+  the main-integrity ruleset rejected a merge-commit conflict
+  resolution — lesson recorded in AGENTS: rebase main into branches,
+  never merge). Payload: the WS-D closing SDK swap (D020, subagent
+  review PASS; engine shell over `norm-adapter-engine` =0.1.0,
+  byte-stable goldens). This branch: seven-manifest bump + both locks,
+  CHANGELOG 0.2.3, ROADMAP SDK bullet marked shipped, RELEASE-SOP
+  tarball-CDN quirk, AGENTS linear-history note. Next: gates + staging
+  smoke, PR, then the SOP arc (tag `v0.2.3`, candidates, human
+  publish, P4, GitHub Release, web-profile refresh).
+
 - WS-D closing swap ready to merge (2026-10-29, branch
   `refactor/adopt-adapter-sdk`, D020 recorded before implementation):
   `dsh-norm-engine` becomes the adapter-local shell over the family SDK
