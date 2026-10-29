@@ -2,6 +2,18 @@
 
 ## Resume here
 
+- 0.2.2 arc opened (2026-10-29, branch `fix/layout-session-isolation`):
+  the layout-index cross-session misbinding incident (verified live —
+  three independent specimens incl. a review-session) drove a
+  three-round adversarial review of the fix proposal (reviewer + refiner
+  subagents, PASS; `docs/planning/layout-session-isolation-plan.md`).
+  D018 (per-session layout via the assembly scope key, Amends D015's
+  global-registration clause) and D019 (bridge idle-TTL recycling +
+  native-tool leases + post-execute lazy restart) recorded before
+  implementation per update order; ARCHITECTURE Process model carries
+  the lifecycle clause. Implementation + tests (dual-scope, bridge-idle,
+  rescope layout assertion) next, then the 0.2.2 promotion arc.
+
 - Stage: **0.2.1 shipped** (2026-10-01). Arc: PR #22 (D017 window, H9
   injection fix, E2E on the real 0.2.0-rc.2 host), #23 (host-floor CI
   job, docs window batch, promotion), #24 (bridge intra-workspace dep
