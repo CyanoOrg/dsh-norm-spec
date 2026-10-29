@@ -90,3 +90,28 @@ jobs:
           mkdir -p /tmp/norm-runtime
           tar xzf "$asset" -C /tmp/norm-runtime --strip-components=1
           /tmp/norm-runtime/bin/norm validate .norm --strict
+
+  # Defense-in-depth ahead of the main-integrity ruleset: catch merge
+  # commits at PR time (contributor-side, cheap) instead of at the main
+  # push (owner-side, observed 2026-10-29 on PR #28's first resolution).
+  # PR-only: a push-triggered main-vs-itself check is structurally
+  # vacuous. If a merge queue is ever adopted, extend with merge_group.
+  linear-history:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Reject merge commits on the PR branch
+        run: |
+          set -euo pipefail
+          base="$(git merge-base origin/main HEAD)"
+          merges="$(git rev-list --merges "$base"..HEAD)"
+          if [ -n "$merges" ]; then
+            echo "merge commits found (main requires linear history; rebase instead):"
+            echo "$merges"
+            exit 1
+          fi
