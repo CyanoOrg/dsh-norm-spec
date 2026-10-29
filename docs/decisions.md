@@ -646,8 +646,8 @@ identity-parameterized. `git diff v0.2.1..main -- crates/` is empty, so
 the SDK content is byte-current for this repository. pi-norm-spec
 completed its swap and its multi-target/layout adoption through the SDK
 (`0.1.0-beta.3`, 2026-10-24) under byte-identical golden gates, and the
-SDK's cross-identity golden fixtures lock parity with both adapters'
-`0.2.1` output.
+SDK's cross-identity golden fixtures lock parity with each adapter's
+pre-swap output (dsh-norm-spec `0.2.1`; pi-norm-spec `0.1.0-beta` line).
 
 **Rationale.** Convergence removes the defect class where a fix lands in
 one fork only — the family's oldest standing risk since D001. Because the
