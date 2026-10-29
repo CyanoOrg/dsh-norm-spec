@@ -37,11 +37,17 @@ intentionally left in place through beta.2 (2026-08-17).
 ## Procedure
 
 1. Branch `chore/promote-<version>` from main.
-2. Bump versions:
+2. Bump versions — `bash scripts/promote-version.sh <old> <new>`
+   guards and updates all eight sites and verifies no residual old
+   version string:
    - Workspace `Cargo.toml` + `cargo update --workspace`.
    - Root `package.json`, `packages/*/package.json` — **including the
      root's `optionalDependencies` cross-references to the platform
      packages** (the 2026-08-17 promotion initially missed these).
+   - The intra-workspace engine pin in
+     `crates/dsh-norm-bridge/Cargo.toml` (missed in 8dfe0f0, fixed by
+     9dac5ca, and missed again in both the 0.2.2 and 0.2.3 promotions —
+     this site recurs, hence the guard).
    - `package-lock.json` via `npm install --package-lock-only`.
 3. CHANGELOG: promote `[Unreleased]` to `[<version>] - <date>`.
 4. Gates: `npm test`, `cargo fmt --check`, `cargo clippy --workspace
@@ -63,18 +69,29 @@ intentionally left in place through beta.2 (2026-08-17).
      flag.
    - npm may hang at "Publishing to …" waiting for an OTP that doesn't
      render; pass `--otp=<code>` explicitly if needed.
-10. Post-publish verification (P4): fresh `dsh plugin --profile web
-    add @cyanoorg/dsh-norm-spec@<exact-version-or-tag>` in a clean
-    DSH_HOME, then the stub-LLM E2E asserting injection reaches the
-    model-visible request. Zero modifications expected.
+10. Post-publish verification (P4): `node scripts/dsh-e2e-p4.mjs
+    <exact-version> --layout-probe`. The script assembles a fresh
+    DSH_HOME profile manually (`dsh plugin add` requires live LLM
+    credentials and fails in credential-less environments, observed
+    2026-10-29), installs the registry version, and asserts the
+    convention injection reaches the model-visible request with zero
+    bridge/payload env overrides. The layout section is legitimately
+    absent from a single-turn request (D015 first-assembly timing; the
+    multi-turn path is covered by the rescope suite); `--layout-probe`
+    instead drives the installed packaged bridge's `layoutIndex`
+    (payload: the `upstream` dir inside the same package). Zero
+    modifications expected.
 11. Create the GitHub Release for `v<version>` with that version's
     CHANGELOG section as the notes (plus the install command and npm
     package links). Mark `prerelease` for alpha/beta/rc; a stable
     release becomes the repo's "Latest". The tag already exists
     (step 6) — the release only attaches notes. Backfill any missing
-    prior tags in the same sitting.
+    prior tags in the same sitting. Write the notes to a file and pass
+    `--notes-file`; never inline notes in shell strings (observed
+    2026-10-29: inline quoting produced a mangled body and a stray
+    process).
 12. Update status.md verification snapshot; note the release in
-    ROADMAP.
+    ROADMAP; refresh the AGENTS.md current-state line.
 
 ## Known npm quirks (observed 2026-08-17)
 
@@ -98,3 +115,7 @@ intentionally left in place through beta.2 (2026-08-17).
   `ERR_PNPM_FETCH_404`. Both recovered without intervention — probe
   the tarball URL directly and wait before treating it as a failed
   publish.
+- pnpm ≥ 11.21 auto-appends `minimumReleaseAgeExclude` entries to a
+  profile's `pnpm-workspace.yaml` when installing fresh publishes
+  (observed 2026-10-29 installing 0.2.3). Expected behavior — keep the
+  entries; not an anomaly.
