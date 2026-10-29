@@ -211,6 +211,7 @@ First public distribution rehearsal (D011): five @cyanoorg npm packages.
 - Hard enforcement subset is empty (D006); injection is guidance and
   validation is soft feedback only.
 
+## [0.1.0-alpha.1] - 2026-08-15
 
 ### Added
 
