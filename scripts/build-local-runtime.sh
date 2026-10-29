@@ -60,6 +60,17 @@ echo "==> sealing payload"
 echo "==> verifying payload"
 "$bridge" upstream-verify --payload "$upstream"
 
+echo "==> staging the release bridge for E2E (npm-suffix layout)"
+case "$target" in
+  aarch64-apple-darwin)       suffix="darwin-arm64" ;;
+  x86_64-apple-darwin)        suffix="darwin-x64" ;;
+  x86_64-unknown-linux-gnu)   suffix="linux-x64" ;;
+  x86_64-pc-windows-msvc)     suffix="win32-x64" ;;
+  *) echo "error: unmapped target: $target" >&2; exit 1 ;;
+esac
+mkdir -p "$runtime/stage/$suffix/bin"
+cp "$bridge" "$runtime/stage/$suffix/bin/"
+
 cat <<RUNTIME
 
 Local runtime ready:
