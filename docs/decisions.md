@@ -3,6 +3,12 @@
 Decision records are append-only. Reversals are new records referencing the
 decision they replace.
 
+Conventions: decision numbers are assigned in adoption order and never
+pre-assigned in planning prose; anticipatory references are renumbered
+when the number is consumed. References to another repository's
+decisions are always qualified by repository (e.g. `norm-spec D020`,
+`pi-norm-spec D018`).
+
 ## D001 — Fork the pi-norm-spec bridge instead of linking or rewriting
 
 **Decision.** dsh-norm-spec forks the Rust `pi-norm-bridge`/`pi-norm-engine`

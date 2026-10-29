@@ -19,11 +19,14 @@ intentionally hybrid:
 
 ## Current state
 
-Version `0.2.1` stable line — the DSH host-sync release. The repository
-was bootstrapped 2026-08-15 by forking the verified pi-norm-spec bridge
-(D001). Public at CyanoOrg/dsh-norm-spec under D010 governance; DSH
-host compat window `0.1.0-rc.6` through `0.2.0-rc.2` (D017), with the
-rc.6 floor kept CI-verified via the `host-floor` job.
+Version `0.2.3` stable line — per-session layout isolation (0.2.2,
+D018/D019) and the family-SDK engine convergence release (0.2.3, D020).
+The repository was bootstrapped 2026-08-15 by forking the verified
+pi-norm-spec bridge (D001). Public at CyanoOrg/dsh-norm-spec under D010
+governance; DSH host compat window `0.1.0-rc.6` through `0.2.0-rc.2`
+(D017), with the rc.6 floor kept CI-verified via the `host-floor` job.
+The engine-side merge/projection is owned by the family SDK
+`norm-adapter-engine` (`=0.1.0`, D020).
 
 Read first:
 
@@ -66,6 +69,11 @@ review → release.
 Non-trivial scope, protocol, enforcement, security, or distribution
 decisions require a decision record before implementation. A green
 regression suite is a merge gate, not proof that a release is complete.
+Every user-visible `feat:`/`fix:` change adds its CHANGELOG entry under
+`[Unreleased]` in the same PR; a promotion PR only promotes the section
+to a version heading with the release date. Non-trivial PRs receive an
+independent review pass (separate reviewer, written report) before
+human review.
 
 ## Branching and commits
 
