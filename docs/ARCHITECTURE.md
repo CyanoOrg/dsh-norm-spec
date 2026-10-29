@@ -107,7 +107,12 @@ yet.
 ## Process model
 
 One persistent `dsh-norm-bridge` child per DSH agent session. Started on
-`agent/session-start`, waits for the versioned `ready` event, shut down
-on plugin disposal. Same failure policy as pi-norm-spec D008: malformed
-frame, startup failure, unexpected EOF, or non-zero exit rejects pending
-work and becomes visible state; no silent fallback or restart.
+session creation (host-line creation event via the compat seam), waits
+for the versioned `ready` event, shut down on plugin disposal. Idle
+recycling (D019): a bridge with no lease, queued validation, or activity
+for `bridgeIdleTtlMs` (default 10 minutes) is shut down and lazily
+restarted on next use — lifecycle management, not failure fallback.
+Failure policy unchanged (pi-norm-spec D008): malformed frame, startup
+failure, unexpected EOF, or non-zero exit rejects pending work and
+becomes visible state; after a failed start the plugin never silently
+retries.

@@ -506,3 +506,116 @@ verified 0.2.0-rc line" and deliberately excludes untested
 **Supersedes.** D004's pin clause only (D010 already superseded its
 local-visibility clause; publication itself long since happened under
 D011).
+
+## D018 — Per-session layout index resolved through the assembly scope key
+
+**Decision.** The `dsh-norm-spec:layout-index` section becomes
+per-session: the plugin keeps a `WeakMap<object, SessionState>` keyed by
+the agent object — the identity the host itself uses as the assembly
+scope — and the section provider resolves `AssembleContext.scope` through
+it, returning that session's own snapshot. An absent or unknown scope
+contributes the empty string, which the host's renderer drops: agent-less
+assemblies carry no map at all. The plugin-level
+`layoutSectionText`/`layoutEntryPaths` singletons are removed; the
+snapshot (`text` + `entryPaths`) moves onto SessionState; `stateFor`
+re-keys the map and marks the layout digest stale whenever it sees a
+different agent for a session, so each fresh agent re-fetches once. The
+D015 first-touch measurement reads the session's own `entryPaths`.
+
+**Context.** A verified incident (2026-10-29, dsh web host 0.2.0-rc.2):
+every session's system prompt carried the same convention map —
+whichever session refreshed last, frozen thereafter by the per-session
+digest guard — including directories that do not exist in the affected
+session's repository, while the reminder and tools faces stayed correctly
+scoped. Root cause: two apply()-scope singletons served one map to all
+sessions. D015 deferred per-session scoping "until a scoped provider
+surface is verified on the rc line"; this record is that verification, on
+both host lines: `assembleContextFor(agent)` returns `{ agent, scope:
+agent }` (dsh-agent 0.2.0-rc.2 dispatch.js:92-94; npm rc.6 pack
+index.js:384-387), section providers are evaluated with the assembly
+context on both lines, globally registered sections participate in every
+scoped assembly, `renderPrompt` drops empty sections, and the same agent
+object is delivered in the creation event, `agent/pre-step`, and
+`tools/*` events — so the scope key the provider receives is the object
+the plugin already keys session state by. Resume/clear/compaction announce
+a fresh agent through the same creation event; the re-key handles churn,
+and dead agents' WeakMap entries are collected with the agent object.
+Full evidence and the three-round review record:
+`docs/planning/layout-session-isolation-plan.md`.
+
+**Rationale.** Keying by the object the host itself uses as the assembly
+scope removes the guessing: the provider can only reach the state
+`stateFor` recorded for exactly that agent, so cross-session service is
+structurally impossible rather than merely guarded against. Undefined
+scope yielding empty is the correct agent-less semantics — Code Mode has
+no session and must not see any session's map — and a strict improvement
+over the last-writer map such assemblies received before. Keeping the
+snapshot on SessionState (with the WeakMap as a scope→state index,
+re-keyed at the single `stateFor` choke point every agent-bearing path
+already calls) means agent churn can never serve a gap: same session ⇒
+same root ⇒ same map, with one forced re-fetch per fresh agent buying
+freshness at negligible cost. The provider is total (`WeakMap.get` +
+optional chaining), satisfying the assembly's no-throw contract. Scoped
+same-name registration was considered and rejected: it needs per-agent
+scope minting, re-registration on churn, and disposal ordering against
+host teardown — strictly more lifecycle for the same per-session text.
+
+**Amends.** D015's global-registration clause ("The section is registered
+globally and reflects the most recently refreshed project layout …
+per-session scoping is deferred until a scoped provider surface is
+verified on the rc line"). Every other D015 mechanism — the bridge
+`layoutIndex` method, the digest guard, the `.norm`-edit stale trigger,
+the measurement — stands unchanged.
+
+## D019 — Idle-TTL recycling for session and ambient bridges
+
+**Decision.** Every bridge this plugin starts — per-session and the
+agent-less ambient fallback — gains idle recycling: activity (bridge
+start settle, each plugin-issued request, each native-tool lease, each
+queued validation-tail item) arms a per-state `unref()`-ed timer for
+`bridgeIdleTtlMs` (default 10 minutes; 0 disables); on fire with nothing
+in flight, the client is detached and shut down gracefully with the same
+failed-state guard `stopBridge` uses. `agent/disposed` and Cordis
+disposal keep their immediate shutdown and now also clear the timer. The
+next use restarts lazily through the existing `startBridgeFor` paths;
+retained digests and layout snapshots mean a restart re-fetches nothing
+and churns no prompt. Native tools acquire a bridge lease (the resolver
+contract widens to `{ client, release }`) so no tool call can be reaped
+between client resolution and its request; plugin-issued requests
+(`layoutIndex`, `promptContextMulti`) are wrapped in the same lease
+primitive; the lease increment and client read share one synchronous
+block, a throwing resolver path decrements before throwing, and release
+is idempotent. `validateAfterTool` awaits `startBridgeFor` before
+reading the client, so a bridge reaped mid-tool-call restarts instead of
+reporting a false validation failure.
+
+**Context.** A verified incident (2026-10-29): six `dsh-norm-bridge
+serve` children under one dsh web host (started 10:08–11:41, all PPID =
+the host). Bridges stop only on `agent/disposed`, and web sidebar
+sessions stay resident for the host's lifetime, so per-session bridges
+accumulate without bound on long-lived hosts — exactly the dominant
+deployment for this adapter. The TTL equals the host tool-timeout ceiling
+(600,000 ms), making mid-tool-call reaps a real case rather than a
+corner. Known limitation recorded: the agent-less ambient bridge resolves
+tool-call roots from `process.cwd()` — pre-existing D007 semantics,
+unchanged here.
+
+**Rationale.** Idle TTL is the only lifecycle signal the plugin owns that
+matches the observed accumulation: steady-state bridge count becomes
+"sessions active within the last TTL" instead of "sessions ever opened".
+Ten minutes reaps the incident's bridges within minutes of their sessions
+going quiet while a restart costs one spawn+handshake hidden behind the
+next action; the config knob keeps the number tunable without a release.
+Reap-detach-then-shutdown plus the lease and enqueue-time validation
+counting close the reap races without touching the bridge protocol, and
+the unref'd, cleared-everywhere timer cannot hold the host process open
+or leak a state past one TTL. Failure surfaces are unchanged: a bridge
+down at an unexpected moment is the existing visible
+`tool-unavailable` / validation-failure path, never a silent empty
+ruleset.
+
+**Documentation.** docs/ARCHITECTURE.md Process model gains the lifecycle
+clause alongside the unchanged failure clause: after a failed start the
+plugin never silently retries; an idle bridge is recycled and lazily
+restarted on next use — idle recycling is lifecycle management, not
+failure fallback.
