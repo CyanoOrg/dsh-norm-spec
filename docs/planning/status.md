@@ -2,6 +2,26 @@
 
 ## Resume here
 
+- Workflow hardening in flight (2026-10-29, branch
+  `chore/workflow-hardening`; plan reviewed PASS over two rounds by an
+  independent subagent — v1 FAIL 3 major / 5 minor / 5 editorial, all
+  incorporated into v2). Converts the 0.2.2/0.2.3 arc's friction into
+  norms and scripts: CHANGELOG [Unreleased] discipline + independent
+  review gate + decision-numbering conventions; .norm gains a Workflow
+  rules section (linear history, per-PR changelog entry, review pass);
+  promote-version.sh guards all EIGHT bump sites incl. the intra-workspace
+  engine pin (missed 8dfe0f0/0.2.2/0.2.3; the stale pin is repaired in
+  this PR); dsh-e2e-p4.mjs replaces the improvised P4 (live PASS on
+  0.2.3 incl. --layout-probe); check-candidate-set.mjs accepts flat,
+  nested, and mixed layouts; build-local-runtime.sh refreshes the staged
+  E2E bridge (npm-suffix mapping); ci.yml gains a pull_request-only
+  linear-history guard (head-sha checkout, merge-base). AGENTS
+  current-state refreshed to 0.2.3; CHANGELOG 0.1.0-alpha.1 heading
+  restored; RELEASE-SOP gains the eighth bump site, scripted P4,
+  --notes-file rule, AGENTS refresh step, and the pnpm
+  minimumReleaseAgeExclude quirk. Next: PR, maintainer merge, owner
+  optionally adds linear-history to the main-quality required checks.
+
 - 0.2.3 promotion in flight (2026-10-29, branch
   `chore/promote-0.2.3`). PR #28 merged to main (linear rebase after
   the main-integrity ruleset rejected a merge-commit conflict
