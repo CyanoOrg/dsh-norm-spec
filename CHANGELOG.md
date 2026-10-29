@@ -3,6 +3,31 @@
 All notable changes are documented here under `[Unreleased]` until release
 preparation.
 
+## [0.2.2] - 2026-10-29
+
+### Fixed
+
+- Per-session layout index (D018): the system-prompt layout map was
+  global plugin state, so on multi-session hosts every session showed
+  the most recently refreshed project's map — sessions in one workspace
+  were handed another workspace's directory map (the cross-session
+  misbinding incident). The layout snapshot now lives on per-session
+  state keyed by the assembly-scope object: each session renders its own
+  map, a session with no scope renders none, and agent re-keying marks
+  the snapshot stale instead of leaking a previous agent's layout.
+- Bridge idle recycling (D019): the bridge process stayed resident for
+  the host's lifetime once started. It now reaps after an idle TTL
+  (default 600000 ms, configurable via `bridgeIdleTtlMs`; 0 disables),
+  with leases protecting in-flight native-tool calls and plugin-issued
+  requests, enqueued validation runs counted until settled, lazy
+  restart on the next need, and idle timers cleared on stop/dispose.
+
+### Changed
+
+- Skill notes cover the per-session layout map (sessions without an
+  agent scope get none) and the nested-harness manual fallback via
+  `norm_collect` / `norm_validate`.
+
 ## [0.2.1] - 2026-10-01
 
 ### Fixed

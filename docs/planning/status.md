@@ -2,6 +2,17 @@
 
 ## Resume here
 
+- 0.2.2 promotion in flight (2026-10-29, branch `chore/promote-0.2.2`).
+  PR #26 merged to main (fix/layout-session-isolation: D018 per-session
+  layout index + D019 bridge idle recycling; 10-check CI green; local
+  verification on both host lines and all four real-host E2E suites).
+  This branch: version bump across all seven manifests plus both locks,
+  CHANGELOG 0.2.2 entry, ROADMAP shipped note, status record; gates and
+  staging smoke re-run per SOP. Next: promotion PR, then the SOP arc —
+  signed tag `v0.2.2`, candidates, human publish, P4, GitHub Release,
+  web-profile refresh. In parallel (hard-ordered behind the v0.2.2 tag):
+  the WS-D closing swap onto `norm-adapter-engine` =0.1.0 as 0.2.3.
+
 - 0.2.2 arc opened (2026-10-29, branch `fix/layout-session-isolation`):
   the layout-index cross-session misbinding incident (verified live —
   three independent specimens incl. a review-session) drove a

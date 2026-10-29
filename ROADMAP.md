@@ -59,6 +59,10 @@ host-compat seam restoring the D008 injection on 0.2.0 hosts (H9),
 and a CI `host-floor` guard; the E2E harness moved to the dsh 0.2.0
 Messages SSE protocol.
 
+Shipped in 0.2.2 (2026-10-29): per-session layout index (D018,
+Amends D015's global registration — the cross-session misbinding
+incident) and bridge idle recycling with request leases (D019).
+
 Note: single-slot convention replacement — the bounded-occupancy
 follow-up approved in D008 — was implemented and verified on
 2026-08-15 and has shipped in every published version since
