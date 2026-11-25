@@ -676,7 +676,13 @@ hard-ordered behind the `v0.2.2` tag and ships as 0.2.3.
 locally installed `0.2.2-rc.5`; the rc.6 floor, the dual-arm
 `peerDependencies` range (`>=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1
 <0.3.0`; cordis `^4.0.1`), and the host-compat shim all stand — the
-range already admits every release inside the wider window. The dev
+range admits every release inside the wider window under the host's
+own peer evaluation (`semver.satisfies` with `includePrerelease`,
+dsh-app-boot's plugin compatibility, the check `dsh plugin add` and
+profile installs run; D017's endpoints were additionally plain-npm
+admitted, the rc ceiling is not). Plain-npm resolution beside
+0.2.2-rc.5 subpackages is out of contract; the range freeze is
+deliberate and moves only with the next window decision. The dev
 and CI line rises to `0.2.2-rc.5`; `@deepseek-ai/dsh-invariants`
 leaves devDependencies (upstream removed the package after
 0.2.0-rc.2) while the `host-floor` rc.6 pack keeps it, mirroring what

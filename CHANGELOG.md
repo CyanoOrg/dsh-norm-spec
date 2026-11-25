@@ -10,8 +10,9 @@ preparation.
 - DSH host compatibility window extended through `0.2.2-rc.5` (D021,
   amends D017's ceiling): the dev/CI line and verified window move from
   `0.2.0-rc.2` to the installed `0.2.2-rc.5` host; the rc.6 floor stays
-  CI-verified and the dual-arm peer range is unchanged (it already
-  covers the line). The one adapter-visible API delta — the required
+  CI-verified and the dual-arm peer range is unchanged (the host's
+  `includePrerelease` peer evaluation — the check `dsh plugin add`
+  runs — admits the line; plain-npm resolution would not). The one adapter-visible API delta — the required
   `modelSelection` field on `agent/pre-step` payloads (step-admitted
   conditional tools) — is absorbed in test fixtures; the adapter never
   reads it. `@deepseek-ai/dsh-invariants` leaves devDependencies

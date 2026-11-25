@@ -28,8 +28,14 @@
   stub/slot/postedit write only the llm override to the profile layer,
   so a profile-layer norm row is destroyed by their rewrites; host CLI
   install + pnpm-linked profile (file:-linked dsh-base/dsh-headless +
-  link:-ed repo plugin) completes the scaffold. Next: independent
-  review, PR.
+  link:-ed repo plugin) completes the scaffold. Independent review
+  PASS-with-findings (reviewer subagent, 2026-11-25; 0 major, 2 minor,
+  2 editorial — all incorporated): D021/CHANGELOG now state that the
+  peer range admits the rc ceiling only under the host's
+  `includePrerelease` evaluation (plain-npm resolution would not —
+  deliberate freeze), `@types/node` aligns to the Node 24 CI line
+  (24.19.2), the AGENTS window line re-wraps, and both READMEs' status
+  block moves to the published 0.2.3. Next: PR.
 
 - Workflow hardening in flight (2026-10-29, branch
   `chore/workflow-hardening`; plan reviewed PASS over two rounds by an
