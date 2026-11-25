@@ -668,3 +668,51 @@ preserving release independence.
 **Documentation.** docs/ARCHITECTURE.md records the engine-side
 provenance change in the same commit as the swap. Sequencing: the swap is
 hard-ordered behind the `v0.2.2` tag and ships as 0.2.3.
+
+## D021 — DSH host compat window through 0.2.2-rc.5
+
+**Decision.** The supported DSH host window is `0.1.0-rc.6` through
+`0.2.2-rc.5`: D017's ceiling clause moves from `0.2.0-rc.2` to the
+locally installed `0.2.2-rc.5`; the rc.6 floor, the dual-arm
+`peerDependencies` range (`>=0.1.0-rc.6 <0.3.0 || >=0.2.0-rc.1
+<0.3.0`; cordis `^4.0.1`), and the host-compat shim all stand — the
+range already admits every release inside the wider window. The dev
+and CI line rises to `0.2.2-rc.5`; `@deepseek-ai/dsh-invariants`
+leaves devDependencies (upstream removed the package after
+0.2.0-rc.2) while the `host-floor` rc.6 pack keeps it, mirroring what
+each line still publishes. CI runs Node 24 (the host's runtime floor
+on this line). The one adapter-visible API delta is
+`PayloadRest<"agent/pre-step">` gaining the required `modelSelection`
+field (step-admitted conditional tools); the adapter never reads it,
+so the delta lands in test fixtures. No runtime protocol changes
+(`bridgeApi` / `promptContextApi` untouched); ships as a patch
+release.
+
+**Context.** The local host updated to 0.2.2-rc.5 (2026-11-24), above
+the D017 ceiling. The 0.2.0-rc.2 → 0.2.2-rc.5 upgrade guides were
+checked surface by surface: `Session.snapshotEvents()`, the
+`startSeq`/`endSeq` surface-replace shape, `agent/created` /
+`agent/disposed` / `agent/pre-step` / `tools/result` /
+`tools/post-execute`, and single-event `Session.append` are all
+verified present in the installed 0.2.2-rc.5 typings; step-admitted
+tool declarations and `engines.dsh`-first compatibility (peer
+fallback when absent) do not touch this adapter. Live evidence on the
+real 0.2.2-rc.5 web host: the profile loads the published 0.2.3
+bundle, per-session bridges spawn (D018 isolation intact), and
+injection plus the runtime Skill register. A scratch smoke against
+the installed 0.2.2-rc.5 packages registers all three native tools,
+lists the Skill, assembles the system-prompt section, and round-trips
+`norm_validate` / `norm_collect` through the sealed bridge;
+`tsc --noEmit` over `src/` and `tests/` reports exactly the
+`modelSelection` fixture break.
+
+**Rationale.** Extending the ceiling beats D017's smoke-only posture
+for anything newer: every checked surface is present or live-proven,
+the peer range already covers the line, and the single compile-level
+delta is confined to test fixtures. The rc.6 floor guard keeps the
+window's lower end verified, so the widened window costs one widened
+test payload helper. `@deepseek-ai/dsh-invariants` stays in the floor
+pack only because the rc.6 line still publishes it.
+
+**Amends.** D017's ceiling clause ("through `0.2.0-rc.2`"); D017's
+floor, peer range, and shim mechanics stand.

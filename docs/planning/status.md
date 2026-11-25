@@ -211,7 +211,7 @@
   (opened with the pi-norm-spec `v0.1.0-beta.1` publication) gates
   upstream norm-spec changes only, not downstream integration.
   1. WS3 migration trigger: norm-spec stable promotion ships
-     `collect/v2` (D021; semantics already mirror our projection) —
+     `collect/v2` (D022; semantics already mirror our projection) —
      migrate the merge upstream, consume one `collect/v2` call, and
      bump the `productCompat` pin deliberately (plan WS3).
   2. D015 measurement review: after a period of normal use, read the
