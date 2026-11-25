@@ -16,9 +16,20 @@
   arc: live web-profile evidence on the real 0.2.2-rc.5 host
   (injection, Skill, per-session bridges) plus a scratch smoke over
   `src/`+`tests/` (0 tsc errors, tools/skill/section/round-trip PASS).
-  On the branch: typecheck + 37/37 on the lifted line. Next: gates
-  (cargo, cordis-smoke, four E2E suites re-staged on the real
-  0.2.2-rc.5 host, local rc.6 floor flip), independent review, PR.
+  On the branch: typecheck + 37/37 on the lifted line. Gates complete
+  (2026-11-25): cordis-smoke PASS from the sample-project cwd; cargo
+  fmt/clippy/test/doc green; all FOUR E2E suites PASS on the real
+  0.2.2-rc.5 host — stub injection, slot replace, postedit feedback
+  (the post-execute path is now runtime-proven on the new host), and
+  rescope+layout-index; rc.6 floor re-verified locally (rc.6 pack flip:
+  typecheck 0 errors, 37/37) with the dev line restored after. E2E
+  restage recipe learned: the profile needs the persistent norm row in
+  the HOME layer (`$DSH_HOME/cordis.patch.yml`, env-launched insert) —
+  stub/slot/postedit write only the llm override to the profile layer,
+  so a profile-layer norm row is destroyed by their rewrites; host CLI
+  install + pnpm-linked profile (file:-linked dsh-base/dsh-headless +
+  link:-ed repo plugin) completes the scaffold. Next: independent
+  review, PR.
 
 - Workflow hardening in flight (2026-10-29, branch
   `chore/workflow-hardening`; plan reviewed PASS over two rounds by an
