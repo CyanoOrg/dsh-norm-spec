@@ -13,7 +13,7 @@ name = "dsh-norm-bridge"
 path = "src/main.rs"
 
 [dependencies]
-dsh-norm-engine = { path = "../dsh-norm-engine", version = "0.2.3" }
+dsh-norm-engine = { path = "../dsh-norm-engine", version = "0.2.4" }
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true

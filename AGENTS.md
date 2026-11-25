@@ -19,8 +19,9 @@ intentionally hybrid:
 
 ## Current state
 
-Version `0.2.3` stable line — per-session layout isolation (0.2.2,
-D018/D019) and the family-SDK engine convergence release (0.2.3, D020).
+Version `0.2.4` stable line — the DSH host-window extension release
+(0.2.4, D021) over the per-session layout isolation (0.2.2,
+D018/D019) and family-SDK engine convergence (0.2.3, D020) line.
 The repository was bootstrapped 2026-08-15 by forking the verified
 pi-norm-spec bridge (D001). Public at CyanoOrg/dsh-norm-spec under D010
 governance; DSH host compat window `0.1.0-rc.6` through `0.2.2-rc.5`

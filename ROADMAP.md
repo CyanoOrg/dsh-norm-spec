@@ -47,9 +47,6 @@
   extraction became the family SDK `norm-adapter-engine`
   (norm-adapter-sdk D001, extracted from this repository's 0.2.1); this
   repository swapped onto it as `=0.1.0` (D020), closing the WS-D plan.
-- DSH host compat window through 0.2.2-rc.5 (D021, amends D017's
-  ceiling): dev/CI line lift to the installed host, Node 24 CI, and the
-  widened test fixtures; ships with the next patch release.
 - Enforcement reopened only under D006's prerequisites.
 
 Shipped in 0.2.0 (2026-09-03): directory-scoped convention paging
@@ -70,6 +67,12 @@ incident) and bridge idle recycling with request leases (D019).
 Shipped in 0.2.3 (2026-10-29): the WS-D closing swap (D020) — the
 engine-side merge/projection now comes from the family SDK
 `norm-adapter-engine` =0.1.0 with byte-stable output.
+
+Shipped in 0.2.4 (2026-11-25): DSH host compat window through
+0.2.2-rc.5 (D021, amends D017's ceiling) — dev/CI line lift to the
+installed host, Node 24 CI, and test-fixture-only adaptation (the
+required `modelSelection` on pre-step payloads; a probed tool executor
+for 0.2.1+-line prompt assembly). Production code unchanged.
 
 Note: single-slot convention replacement — the bounded-occupancy
 follow-up approved in D008 — was implemented and verified on

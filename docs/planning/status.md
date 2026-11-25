@@ -2,40 +2,30 @@
 
 ## Resume here
 
-- Host sync to DSH 0.2.2-rc.5 in flight (2026-11-25, branch
-  `fix/host-sync-0.2.2-rc.5`, D021 recorded before implementation):
-  the local host moved above the D017 ceiling, so the window extends
-  through 0.2.2-rc.5 (floor, dual-arm peer range, and shim unchanged —
-  the range already admits the line). Dev line lifted to 0.2.2-rc.5
-  (cordis 4.1.0 toolchain, `dsh-invariants` dropped — removed upstream
-  after 0.2.0-rc.2), CI on Node 24. Two adapter-adjacent breaks were
-  absorbed test-side only: `agent/pre-step` payloads require
-  `modelSelection` (widened helper compiles on both lines) and prompt
-  assembly needs a mounted tool executor on the 0.2.1+ line (probed
-  minimal executor in the dual-scope composition). Verified before the
-  arc: live web-profile evidence on the real 0.2.2-rc.5 host
-  (injection, Skill, per-session bridges) plus a scratch smoke over
-  `src/`+`tests/` (0 tsc errors, tools/skill/section/round-trip PASS).
-  On the branch: typecheck + 37/37 on the lifted line. Gates complete
-  (2026-11-25): cordis-smoke PASS from the sample-project cwd; cargo
-  fmt/clippy/test/doc green; all FOUR E2E suites PASS on the real
-  0.2.2-rc.5 host — stub injection, slot replace, postedit feedback
-  (the post-execute path is now runtime-proven on the new host), and
-  rescope+layout-index; rc.6 floor re-verified locally (rc.6 pack flip:
-  typecheck 0 errors, 37/37) with the dev line restored after. E2E
-  restage recipe learned: the profile needs the persistent norm row in
-  the HOME layer (`$DSH_HOME/cordis.patch.yml`, env-launched insert) —
-  stub/slot/postedit write only the llm override to the profile layer,
-  so a profile-layer norm row is destroyed by their rewrites; host CLI
-  install + pnpm-linked profile (file:-linked dsh-base/dsh-headless +
-  link:-ed repo plugin) completes the scaffold. Independent review
-  PASS-with-findings (reviewer subagent, 2026-11-25; 0 major, 2 minor,
-  2 editorial — all incorporated): D021/CHANGELOG now state that the
-  peer range admits the rc ceiling only under the host's
-  `includePrerelease` evaluation (plain-npm resolution would not —
-  deliberate freeze), `@types/node` aligns to the Node 24 CI line
-  (24.19.2), the AGENTS window line re-wraps, and both READMEs' status
-  block moves to the published 0.2.3. Next: PR.
+- 0.2.4 promotion in flight (2026-11-25, branch `chore/promote-0.2.4`).
+  Payload: the eight-site bump via `promote-version.sh 0.2.3 0.2.4`
+  (workspace, root + five package manifests incl. the root's platform
+  cross-references, the intra-workspace engine pin) plus both locks,
+  CHANGELOG [Unreleased] -> [0.2.4] - 2026-11-25, AGENTS current-state,
+  ROADMAP shipped-in-0.2.4 entry, README pair status blocks, and this
+  record. Next: gates + staging smoke, PR, then the SOP arc (tag
+  `v0.2.4`, candidates, human publish, P4, GitHub Release, web-profile
+  refresh).
+
+- Host sync to DSH 0.2.2-rc.5 **merged** (2026-11-25, PR #31 ff-merged
+  as `84fcc13` after all eleven checks green; independent review
+  PASS-with-findings, all incorporated). Delivered: D021 (window
+  ceiling 0.2.0-rc.2 -> 0.2.2-rc.5, floor/dual-arm range/shim
+  unchanged), dev line at 0.2.2-rc.5 (cordis 4.1.0 toolchain,
+  `dsh-invariants` dropped), Node 24 CI, `@types/node` 24.19.2,
+  test-only adaptation (widened `modelSelection` helper + probed
+  executor in dual-scope), docs window batch, CHANGELOG [Unreleased].
+  Gates on the branch: dual-line typecheck + 37/37, cordis-smoke,
+  cargo fmt/clippy/test/doc, four E2E suites PASS on the real
+  0.2.2-rc.5 host (postedit proves tools/post-execute there), rc.6
+  floor locally re-verified twice (before and after the @types lift).
+  Ops knowledge recorded below: the E2E restage recipe
+  (home-layer norm row).
 
 - Workflow hardening in flight (2026-10-29, branch
   `chore/workflow-hardening`; plan reviewed PASS over two rounds by an
