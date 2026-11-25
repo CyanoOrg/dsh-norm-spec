@@ -3,6 +3,21 @@
 All notable changes are documented here under `[Unreleased]` until release
 preparation.
 
+## [Unreleased]
+
+### Fixed
+
+- DSH host compatibility window extended through `0.2.2-rc.5` (D021,
+  amends D017's ceiling): the dev/CI line and verified window move from
+  `0.2.0-rc.2` to the installed `0.2.2-rc.5` host; the rc.6 floor stays
+  CI-verified and the dual-arm peer range is unchanged (it already
+  covers the line). The one adapter-visible API delta — the required
+  `modelSelection` field on `agent/pre-step` payloads (step-admitted
+  conditional tools) — is absorbed in test fixtures; the adapter never
+  reads it. `@deepseek-ai/dsh-invariants` leaves devDependencies
+  (upstream removed the package after 0.2.0-rc.2), the cordis dev
+  toolchain moves to 4.1.0/1.1.0, and CI runs Node 24.
+
 ## [0.2.3] - 2026-10-29
 
 ### Changed

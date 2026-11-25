@@ -29,6 +29,30 @@ const LAYOUT_SECTION = "dsh-norm-spec:layout-index";
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/** Pre-step payload across host lines (D021): `modelSelection` is required
+ * from the 0.2.1 line (step-admitted tools) and is an extra property on
+ * the rc.6 floor, so the payload is built through a widened type — no
+ * object-literal excess property check on either line. */
+function preStepPayload(
+  turn: number,
+  step: number,
+  signal: AbortSignal,
+): {
+  messages: never[];
+  turn: number;
+  step: number;
+  signal: AbortSignal;
+  modelSelection: { provider: string; model: string };
+} {
+  return {
+    messages: [],
+    turn,
+    step,
+    signal,
+    modelSelection: { provider: "e2e-stub", model: "stub-model" },
+  };
+}
+
 async function mountedApp(config: object = {}): Promise<Context> {
   const app = new Context();
   app.plugin((await import("@deepseek-ai/dsh-system-prompt")).default);
@@ -39,6 +63,29 @@ async function mountedApp(config: object = {}): Promise<Context> {
     ...config,
   });
   await sleep(300);
+  // 0.2.1+ host line: prompt assembly consults the selected tool
+  // executor's tool declaration (conditional tools), and assembling
+  // without one throws ToolExecutorUnavailableError. The rc.6 floor has
+  // no executor concept, so the capability is probed and a minimal
+  // executor registered — assemblies then work on both lines (D021).
+  const tools = (app as unknown as {
+    tools?: {
+      setExecutor?: (executor: {
+        describe: () => { schemas: never[]; knownNames: never[] };
+        execute: () => Promise<{
+          results: never[];
+          additionalContexts: never[];
+          concluded: boolean;
+        }>;
+      }) => () => void;
+    };
+  }).tools;
+  if (typeof tools?.setExecutor === "function") {
+    tools.setExecutor({
+      describe: () => ({ schemas: [], knownNames: [] }),
+      execute: async () => ({ results: [], additionalContexts: [], concluded: false }),
+    });
+  }
   return app;
 }
 
@@ -74,12 +121,7 @@ async function driveAgent(app: Context, id: string, cwd: string): Promise<Driven
   events.emit("agent/session-start" as never, {} as never);
   await events.waterfall(
     "agent/pre-step",
-    {
-      messages: [],
-      turn: 1,
-      step: 1,
-      signal: new AbortController().signal,
-    },
+    preStepPayload(1, 1, new AbortController().signal),
     () => Promise.resolve({ kind: "enter" as const, messages: [] }),
   );
   return {
@@ -128,12 +170,7 @@ test("D018: one plugin instance serves each session its own workspace map", asyn
     events2.emit("agent/session-start" as never, {} as never);
     await events2.waterfall(
       "agent/pre-step",
-      {
-        messages: [],
-        turn: 2,
-        step: 1,
-        signal: new AbortController().signal,
-      },
+      preStepPayload(2, 1, new AbortController().signal),
       () => Promise.resolve({ kind: "enter" as const, messages: [] }),
     );
     const textA2 = await layoutSectionText(app, agentA2);

@@ -26,6 +26,30 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixture = path.join(repo, "tests/fixtures/fake-bridge.mjs");
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** Pre-step payload across host lines (D021): `modelSelection` is required
+ * from the 0.2.1 line (step-admitted tools) and is an extra property on
+ * the rc.6 floor, so the payload is built through a widened type — no
+ * object-literal excess property check on either line. */
+function preStepPayload(
+  turn: number,
+  step: number,
+  signal: AbortSignal,
+): {
+  messages: never[];
+  turn: number;
+  step: number;
+  signal: AbortSignal;
+  modelSelection: { provider: string; model: string };
+} {
+  return {
+    messages: [],
+    turn,
+    step,
+    signal,
+    modelSelection: { provider: "e2e-stub", model: "stub-model" },
+  };
+}
 const alive = (pid: number): boolean => {
   try {
     process.kill(pid, 0);
@@ -81,12 +105,7 @@ test("D019: idle reap, lazy restart, and disposal shutdown", async () => {
     events.emit("agent/session-start" as never, {} as never);
     await events.waterfall(
       "agent/pre-step",
-      {
-        messages: [],
-        turn: 1,
-        step: 1,
-        signal: new AbortController().signal,
-      },
+      preStepPayload(1, 1, new AbortController().signal),
       () => Promise.resolve({ kind: "enter" as const, messages: [] }),
     );
 
@@ -142,7 +161,7 @@ test("D019: a held lease prevents the reap while a request is in flight", async 
     const signal = new AbortController().signal;
     void events.waterfall(
       "agent/pre-step",
-      { messages: [], turn: 1, step: 1, signal },
+      preStepPayload(1, 1, signal),
       () => Promise.resolve({ kind: "enter" as const, messages: [] }),
     ).catch(() => undefined);
 
