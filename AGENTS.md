@@ -23,8 +23,8 @@ Version `0.2.3` stable line — per-session layout isolation (0.2.2,
 D018/D019) and the family-SDK engine convergence release (0.2.3, D020).
 The repository was bootstrapped 2026-08-15 by forking the verified
 pi-norm-spec bridge (D001). Public at CyanoOrg/dsh-norm-spec under D010
-governance; DSH host compat window `0.1.0-rc.6` through `0.2.0-rc.2`
-(D017), with the rc.6 floor kept CI-verified via the `host-floor` job.
+governance; DSH host compat window `0.1.0-rc.6` through `0.2.2-rc.5`
+(D017, ceiling amended by D021), with the rc.6 floor kept CI-verified via the `host-floor` job.
 The engine-side merge/projection is owned by the family SDK
 `norm-adapter-engine` (`=0.1.0`, D020).
 

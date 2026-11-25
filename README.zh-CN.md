@@ -15,8 +15,8 @@ DeepSeek Harness (dsh) 的 Cordis 插件适配器，为 [norm-spec](https://gith
 > 把作用于当前工作目录的约定分页递送到 agent 行动时刻的感知点，
 > 并在编辑后据此核对。
 
-递送是宿主相关的。受支持的 DSH 宿主（rc.6 至 0.2.0-rc.2，D017）的
-注入口（`agent/pre-step`）写入会话
+递送是宿主相关的。受支持的 DSH 宿主（rc.6 至 0.2.2-rc.5，D017 经
+D021 修订）的注入口（`agent/pre-step`）写入会话
 日志，因此提醒是 durable 的：注入一次、未变化时被抑制（SHA-1
 digest）、收集到的约定变化时**通过单一槽位原地取代**（`surfaceOp`
  replace）。模型永远不会携带过期约定，占用有界——无论会话跨目录
@@ -26,8 +26,8 @@ digest）、收集到的约定变化时**通过单一槽位原地取代**（`sur
 
 **状态：`0.2.1` stable，已发布到 npm：
 [`@cyanoorg/dsh-norm-spec`](https://www.npmjs.com/package/@cyanoorg/dsh-norm-spec)。
-DSH 宿主窗口：`@deepseek-ai/dsh@0.1.0-rc.6` 至 `0.2.0-rc.2`
-（D017；rc.6 下限由 CI 持续验证）。**
+DSH 宿主窗口：`@deepseek-ai/dsh@0.1.0-rc.6` 至 `0.2.2-rc.5`
+（D017 经 D021 修订；rc.6 下限由 CI 持续验证）。**
 
 ## 安装
 

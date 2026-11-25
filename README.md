@@ -19,7 +19,7 @@ This adapter delivers convention knowledge the way a cache wants it:
 > afterward.
 
 Delivery is host-specific. On supported DSH hosts (rc.6 through
-0.2.0-rc.2, D017) the injection seam
+0.2.2-rc.5, D017 as amended by D021) the injection seam
 (`agent/pre-step`) writes into the session log, so the reminder is
 durable: injected once, suppressed while unchanged (SHA-1 digest), and —
 when the collected conventions change — **superseded in place through a
@@ -32,8 +32,8 @@ point.
 
 **Status: `0.2.1` stable, published to npm as
 [`@cyanoorg/dsh-norm-spec`](https://www.npmjs.com/package/@cyanoorg/dsh-norm-spec).
-DSH host window: `@deepseek-ai/dsh@0.1.0-rc.6` through `0.2.0-rc.2`
-(D017; the rc.6 floor stays CI-verified).**
+DSH host window: `@deepseek-ai/dsh@0.1.0-rc.6` through `0.2.2-rc.5`
+(D017 as amended by D021; the rc.6 floor stays CI-verified).**
 
 ## Install
 

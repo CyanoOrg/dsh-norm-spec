@@ -2,6 +2,24 @@
 
 ## Resume here
 
+- Host sync to DSH 0.2.2-rc.5 in flight (2026-11-25, branch
+  `fix/host-sync-0.2.2-rc.5`, D021 recorded before implementation):
+  the local host moved above the D017 ceiling, so the window extends
+  through 0.2.2-rc.5 (floor, dual-arm peer range, and shim unchanged —
+  the range already admits the line). Dev line lifted to 0.2.2-rc.5
+  (cordis 4.1.0 toolchain, `dsh-invariants` dropped — removed upstream
+  after 0.2.0-rc.2), CI on Node 24. Two adapter-adjacent breaks were
+  absorbed test-side only: `agent/pre-step` payloads require
+  `modelSelection` (widened helper compiles on both lines) and prompt
+  assembly needs a mounted tool executor on the 0.2.1+ line (probed
+  minimal executor in the dual-scope composition). Verified before the
+  arc: live web-profile evidence on the real 0.2.2-rc.5 host
+  (injection, Skill, per-session bridges) plus a scratch smoke over
+  `src/`+`tests/` (0 tsc errors, tools/skill/section/round-trip PASS).
+  On the branch: typecheck + 37/37 on the lifted line. Next: gates
+  (cargo, cordis-smoke, four E2E suites re-staged on the real
+  0.2.2-rc.5 host, local rc.6 floor flip), independent review, PR.
+
 - Workflow hardening in flight (2026-10-29, branch
   `chore/workflow-hardening`; plan reviewed PASS over two rounds by an
   independent subagent — v1 FAIL 3 major / 5 minor / 5 editorial, all

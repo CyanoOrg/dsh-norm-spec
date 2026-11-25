@@ -47,6 +47,9 @@
   extraction became the family SDK `norm-adapter-engine`
   (norm-adapter-sdk D001, extracted from this repository's 0.2.1); this
   repository swapped onto it as `=0.1.0` (D020), closing the WS-D plan.
+- DSH host compat window through 0.2.2-rc.5 (D021, amends D017's
+  ceiling): dev/CI line lift to the installed host, Node 24 CI, and the
+  widened test fixtures; ships with the next patch release.
 - Enforcement reopened only under D006's prerequisites.
 
 Shipped in 0.2.0 (2026-09-03): directory-scoped convention paging

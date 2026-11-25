@@ -22,7 +22,7 @@ dsh-norm-bridge              process protocol and lifecycle
 dsh-norm-engine              prompt context; future typed policy
 ```
 
-## Host surface (DSH rc.6 through 0.2.0-rc.2, D017 window; cross-line access concentrated in `src/host-compat.ts`)
+## Host surface (DSH rc.6 through 0.2.2-rc.5, D017 window with the ceiling amended by D021; cross-line access concentrated in `src/host-compat.ts`)
 
 The plugin adapts five DSH surfaces:
 
