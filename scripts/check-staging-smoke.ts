@@ -2,6 +2,7 @@
 // Stages the root and one native package, npm-packs both, installs them
 // into an isolated consumer (with the pinned @deepseek-ai peers), and
 // imports the staged lib as real ESM — the production-shaped path.
+// Requires pnpm on PATH (the consumer install mirrors profile pnpm).
 // Usage: node --experimental-strip-types scripts/check-staging-smoke.ts
 import { mkdtemp, rm, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -60,9 +61,14 @@ try {
   const peerArgs = Object.entries(devDeps)
     .filter(([name]) => name.startsWith("@deepseek-ai/"))
     .flatMap(([name, version]) => [`${name}@${version}`]);
-  await execFileSync("npm", [
-    "install", "--no-save", "--ignore-scripts", "--cache", path.join(root, "npm-cache"),
-    rootTarball, nativeTarball, ...peerArgs,
+  // pnpm — the production-shaped installer: profile installs run pnpm,
+  // which warns on (not fails) the frozen dual-arm peer range under the
+  // prerelease-tuple rule and auto-installs the transitive peer closure
+  // the installed lib imports through (D021: plain-npm strict resolution
+  // is out of contract for rc ceilings; the host's includePrerelease
+  // compatibility check is the gate the supported path runs).
+  await execFileSync("pnpm", [
+    "add", rootTarball, nativeTarball, ...peerArgs,
   ], { cwd: consumer, stdio: "pipe" });
   console.log("installed root+native+peers into isolated consumer");
 
