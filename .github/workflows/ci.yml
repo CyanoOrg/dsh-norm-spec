@@ -29,17 +29,17 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
 
-  # D017 floor guard: the supported host window keeps 0.1.0-rc.6 as its
-  # floor, while the lockfile tracks npm latest (0.2.0-rc.2). Installing the
-  # rc.6 peer pack over the checkout keeps the floor compile- and
-  # unit-verified on every push; the host-compat seam (src/host-compat.ts)
-  # must typecheck against both host lines.
+  # D017 floor guard (ceiling amended by D021): the supported host window
+  # keeps 0.1.0-rc.6 as its floor, while the lockfile tracks npm latest
+  # (0.2.2-rc.5). Installing the rc.6 peer pack over the checkout keeps
+  # the floor compile- and unit-verified on every push; the host-compat
+  # seam (src/host-compat.ts) must typecheck against both host lines.
   host-floor:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -47,11 +47,11 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Install the rc.6 floor pack (CLI overrides the dev line)
         # --legacy-peer-deps: the CLI pins intentionally differ from the
-        # 0.2.0-rc.2 dev pins in package.json for this job only; strict
+        # 0.2.2-rc.5 dev pins in package.json for this job only; strict
         # peer resolution rejects the deliberate mismatch.
         run: >
           npm install --no-save --legacy-peer-deps
