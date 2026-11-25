@@ -2,6 +2,29 @@
 
 ## Resume here
 
+- Stage: **0.2.4 shipped** (2026-11-25). Full arc: host-sync PR #31
+  (D021) ff-merged as `84fcc13` after 11/11 checks; promotion PR #32
+  ff-merged as `768384b` (eight-site bump + locks, CHANGELOG 0.2.4,
+  the staging smoke's pnpm production-shaped consumer — plain-npm
+  strict resolution is out of contract for rc ceilings under D021);
+  independent review PASS-with-findings on both PRs, findings
+  incorporated; signed tag `v0.2.4` cut locally (same key as v0.2.3)
+  and pushed; tag-bound candidates run `45621540366` green, five
+  tarballs verified (sha256 x5, `release.json`, scoped loader-entry);
+  human publish of all five packages without `--tag` — registry
+  `latest` -> 0.2.4 verified; P4 registry E2E PASS (reminder
+  injection + layout marker + own-root description, zero env
+  overrides); GitHub Release `v0.2.4` attached as Latest; web profile
+  refreshed 0.2.3 -> 0.2.4 (applies on the next host restart).
+  P4 ops notes (the /tmp wipe took the original E2E scaffold; the
+  rebuilt recipe): pnpm 11 exits 1 on unapproved dependency build
+  scripts and appends `allowBuilds` placeholders to the workspace
+  yaml — set them `false` (the E2E profile runs none of them); the
+  scaffold yaml must keep the DEFAULT isolated linker (the probe
+  reads `node_modules/.pnpm`), and the sample project's `.norm`
+  description must be `ROOT-ONLY-MARKER`. Follow-up candidate: teach
+  dsh-e2e-p4.mjs to self-heal the `allowBuilds` placeholders.
+
 - 0.2.4 promotion in flight (2026-11-25, branch `chore/promote-0.2.4`).
   Payload: the eight-site bump via `promote-version.sh 0.2.3 0.2.4`
   (workspace, root + five package manifests incl. the root's platform
@@ -261,6 +284,21 @@
   no `PATH` fallback for the bridge (packaged resolution is live since
   D011; env override remains for development); enforcement subset empty
   (D006).
+
+## Verification snapshot (2026-11-25, 0.2.4)
+
+| Gate | Command | Result |
+|---|---|---|
+| TypeScript | `npm test` (typecheck + unit) | green, 37/37 |
+| Rust | `cargo fmt --check` / `clippy -D warnings` / `test` / `doc` | green |
+| Staging smoke | `scripts/check-staging-smoke.ts` (isolated pnpm consumer) | PASS on the bumped 0.2.4 set |
+| CI (PR #31, #32) | 11 checks each | 11/11 green on both |
+| Signed tag | `v0.2.4` on `768384b` | cut and pushed (signature verified) |
+| Candidates | tag-bound run `45621540366` | 5 tarballs + inventory; sha256 x5 OK; `release.json` + scoped loader-entry |
+| Publish | five packages, no `--tag` | done (human); registry `latest` -> 0.2.4 |
+| P4 registry E2E | `node scripts/dsh-e2e-p4.mjs 0.2.4 --layout-probe` | PASS — reminder injection, layout marker, own root; zero modifications |
+| GitHub Release | `v0.2.4` notes (`--notes-file`) | attached; marked Latest |
+| Web profile | `~/.dsh/profiles/web` | refreshed 0.2.3 -> 0.2.4 (live on next host restart) |
 
 ## Verification snapshot (2026-09-03, 0.2.0)
 

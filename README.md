@@ -30,7 +30,7 @@ different host in [pi-norm-spec](https://github.com/CyanoOrg/pi-norm-spec)
 — the delivery layer is the host-specific part, and that boundary is the
 point.
 
-**Status: `0.2.3` stable, published to npm as
+**Status: `0.2.4` stable, published to npm as
 [`@cyanoorg/dsh-norm-spec`](https://www.npmjs.com/package/@cyanoorg/dsh-norm-spec).
 DSH host window: `@deepseek-ai/dsh@0.1.0-rc.6` through `0.2.2-rc.5`
 (D017 as amended by D021; the rc.6 floor stays CI-verified).**
