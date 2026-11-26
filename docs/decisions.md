@@ -722,3 +722,43 @@ pack only because the rc.6 line still publishes it.
 
 **Amends.** D017's ceiling clause ("through `0.2.0-rc.2`"); D017's
 floor, peer range, and shim mechanics stand.
+
+## D022 — Reconcile convention reminders with the current session surface
+
+**Decision.** At each entering pre-step, reconcile the adapter's durable
+slot with the current collection result and the visible session surface.
+Use the existing single-node surface replacement and cite the shadowed
+node in the session log.
+
+- A successful nonempty result supplies one active instruction block. An
+  identical visible instruction can be reused. If the slot is absent,
+  inject the result even when the content matches an earlier reminder.
+- A successful empty result retires the previous instruction or failure
+  notice with a standard user notice carrying no model content. An
+  already empty or fresh session needs no action.
+- An unavailable bridge or a failed collection retires the previous rule
+  body and supplies an unavailable notice with the error code. A later
+  successful collection reconciles that notice with the new result.
+  Cancellation leaves the current surface for the next entering step to
+  reconcile.
+- Identify the managed slot by the adapter's instruction source or its
+  reminder-status notice source. Preserve post-edit feedback and messages
+  from other producers. Superseded rule events remain in session history.
+
+**Context.** The 2026-11-26 dogfood on DSH 0.2.2-rc.5 observed the previous
+rule body in provider requests after both successful empty collection and a
+collection error. A session-surface probe also showed that digest-based
+suppression skipped an unchanged reminder after its slot was shadowed.
+[Reminder lifecycle plan](planning/reminder-lifecycle-plan.md)
+
+**Rationale.** The live surface is authoritative for suppression. DSH
+supports replacing a node with another standard message carrying explicit
+provenance. A notice with empty model content leaves an audit event and
+retires the old rules. The unavailable state remains distinguishable from
+successful empty collection.
+
+**Amends.** D008's digest-based suppression and replacement trigger. D003
+standard session event types, D016 bounded scope selection, and D021 host
+compatibility govern the change. The layout index follows D018 and keeps
+its own freshness rules. The current sealed collect/v1 payload and bridge
+contract continue to supply collection results.
