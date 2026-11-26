@@ -79,9 +79,10 @@ surface was tested.
 - [ ] Exercise successful empty collection, collection error, bridge
       unavailability, and recovery. Assert rule body absence in empty and
       unavailable requests and an observable cause only on failure.
-- [ ] Exercise real compaction and resume with identical rule content.
-      Verify that the adapter restores a missing slot and preserves one
-      copy of a slot that is still visible.
+- [x] Exercise real compaction and resume with identical rule content.
+      Native compaction shadowed the old slot on both host endpoints.
+      On `0.2.2-rc.5`, resuming the saved session in a fresh process
+      preserved the restored slot and sent one copy of the rule.
 - [ ] Exercise shell modification and a successful built-in edit that
       introduces a `.norm` validation finding. Check when explicit
       collection is needed and when the post-edit diagnostic reaches the
@@ -119,5 +120,21 @@ uses the current sealed collect/v1 payload.
   slot stays untouched. The reviewer reran the three focused tests.
 - The rc.6 provider adapter can serialize the contentless notice as an
   empty user placeholder. The request regression verifies absence of
-  old rule text. The session-surface fixture tests a shadowed slot,
-  with real compaction and resume still open in the acceptance list.
+  old rule text. The session-surface fixture covers a shadowed slot.
+
+### Native compaction and persisted resume
+
+An isolated headless run invoked the host's compaction service on a
+balanced span containing the original reminder. A local stub provider
+returned a short checkpoint with a distinct marker. The probe checked
+both the shadowed sequence numbers and outgoing provider requests.
+
+- On shipped adapter `0.2.4` and host `0.2.2-rc.5`, the old slot left the
+  surface. The next task request carried the checkpoint and zero copies
+  of the unchanged rule.
+- On candidate `3a1244e`, the next task request carried the checkpoint
+  and exactly one copy of the unchanged rule on both `0.1.0-rc.6` and
+  `0.2.2-rc.5`.
+- On `0.2.2-rc.5`, a fresh headless process resumed the same persisted
+  session by ID. The restored instruction slot was already visible at
+  pre-step and the provider received exactly one copy of the rule.

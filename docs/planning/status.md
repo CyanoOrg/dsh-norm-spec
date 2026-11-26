@@ -31,8 +31,10 @@
   rule text after empty collection and a parse error on 0.2.4. The
   candidate passes the probe on DSH `0.1.0-rc.6` and `0.2.2-rc.5`.
   Independent review found a cancellation race, now covered by a
-  regression test. Real compaction and resume remain open, along with
-  hosted checks and maintainer review.
+  regression test. Native compaction passed at both host endpoints,
+  and a fresh `0.2.2-rc.5` headless process resumed the same persisted
+  session with one rule copy. Hosted checks and maintainer review
+  remain open.
   [Reminder lifecycle plan](reminder-lifecycle-plan.md)
 
 - 0.2.4 promotion in flight (2026-11-25, branch `chore/promote-0.2.4`).
