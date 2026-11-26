@@ -1,7 +1,7 @@
 # Convention Reminder Lifecycle Plan
 
-Draft for review, 2026-11-26. The proposed request behavior needs a
-decision before implementation. The candidate is a patch on the 0.2 line.
+Opened 2026-11-26 for a patch on the 0.2 line. D022 records the reminder
+lifecycle decision. [Decision records](../decisions.md)
 
 ## Evidence on 0.2.4
 
@@ -25,7 +25,7 @@ external removal of the rule file in the request probe. Layout freshness
 has a separate system-prompt path.
 [Injection handler](../../src/index.ts)
 
-## Proposed request behavior
+## Request behavior
 
 Retain the most-recent-first set of up to four target directories from D016
 and the durable single slot from D008. Apply the following behavior at the
@@ -60,7 +60,10 @@ collection and validation when the workflow requires them.
 
 ## Request-level acceptance
 
-Use a real host with a local stub provider. Assert the request that issues
+Use a real host with a local stub provider. The
+[lifecycle regression](../../scripts/dsh-e2e-reminder-lifecycle.mjs)
+captures the five-step rules, empty, recovery, failure, and recovery
+sequence. Assert the request that issues
 each edit, the request after each tool result, and the request after each
 scope transition. Record the adapter and host versions, the paths or marker
 identities observed, and whether the provider request or only the session
@@ -96,3 +99,25 @@ promoting a patch.
 The upstream collect/v2 work follows its post-stable schedule. This patch
 uses the current sealed collect/v1 payload.
 [Upstream decision](https://github.com/CyanoOrg/norm-spec/blob/main/docs/decisions.md)
+
+## Local verification and independent review
+
+- The request regression failed on the 0.2.4 implementation because the
+  old rule text survived both empty and invalid input. The fixed
+  `3a1244e` candidate passed the five provider requests on real DSH
+  `0.1.0-rc.6` and `0.2.2-rc.5` with a local stub provider and the
+  released rc.1 engine.
+- TypeScript typechecks and all 40 tests passed against each host
+  endpoint. The focused tests cover a shadowed slot, legacy duplicate
+  retirement, post-edit notice preservation, bridge startup failure,
+  and cancellation after the bridge received the request. Rust fmt,
+  strict Clippy, 19 unit tests, rustdoc, and strict `.norm` validation
+  passed locally.
+- Independent review found a cancellation race where a late bridge
+  result could still replace the slot. The candidate checks the abort
+  signal before reconciliation, and the regression verifies that the
+  slot stays untouched. The reviewer reran the three focused tests.
+- The rc.6 provider adapter can serialize the contentless notice as an
+  empty user placeholder. The request regression verifies absence of
+  old rule text. The session-surface fixture tests a shadowed slot,
+  with real compaction and resume still open in the acceptance list.

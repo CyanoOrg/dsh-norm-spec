@@ -25,13 +25,14 @@
   description must be `ROOT-ONLY-MARKER`. Follow-up candidate: teach
   dsh-e2e-p4.mjs to self-heal the `allowBuilds` placeholders.
 
-- The next patch candidate addresses reminder retirement and restoration.
-  On 2026-11-26, a local stub provider captured the 0.2.4 adapter on host
-  0.2.2-rc.5 retaining old convention text after successful empty
-  collection and after a collection error. A separate session-surface
-  probe found that the same digest suppresses reinjection after the old
-  slot is shadowed. The plan records the evidence, proposed behavior
-  pending decision, and request-level gates.
+- D022 reminder retirement and restoration is a local patch candidate
+  on `fix/reminder-lifecycle` (2026-11-26). The decision is `dd5edfb`
+  and the implementation is `3a1244e`. The request probe reproduced old
+  rule text after empty collection and a parse error on 0.2.4. The
+  candidate passes the probe on DSH `0.1.0-rc.6` and `0.2.2-rc.5`.
+  Independent review found a cancellation race, now covered by a
+  regression test. Real compaction and resume remain open, along with
+  hosted checks and maintainer review.
   [Reminder lifecycle plan](reminder-lifecycle-plan.md)
 
 - 0.2.4 promotion in flight (2026-11-25, branch `chore/promote-0.2.4`).
