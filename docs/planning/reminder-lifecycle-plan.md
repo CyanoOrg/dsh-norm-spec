@@ -69,26 +69,27 @@ scope transition. Record the adapter and host versions, the paths or marker
 identities observed, and whether the provider request or only the session
 surface was tested.
 
-- [ ] Compare first direct write, separate read then edit, and explicit
+- [x] Compare first direct write, separate read then edit, and explicit
       collect then write. For the direct write, check the rule arrives on
       the request after the tool result. For the latter two, assert the
       intended rule body and scope in the request that issues the write.
-- [ ] Visit five distinct sibling directories. Assert the retained four
+- [x] Visit five distinct sibling directories. Assert the retained four
       scopes in recency order, absence of the evicted scope's exclusive
       body, and one full copy of the shared ancestor.
-- [ ] Exercise successful empty collection, collection error, bridge
+- [x] Exercise successful empty collection, collection error, bridge
       unavailability, and recovery. Assert rule body absence in empty and
       unavailable requests and an observable cause only on failure.
 - [x] Exercise real compaction and resume with identical rule content.
       Native compaction shadowed the old slot on both host endpoints.
       On `0.2.2-rc.5`, resuming the saved session in a fresh process
       preserved the restored slot and sent one copy of the rule.
-- [ ] Exercise shell modification and a successful built-in edit that
+- [x] Exercise shell modification and a successful built-in edit that
       introduces a `.norm` validation finding. Check when explicit
       collection is needed and when the post-edit diagnostic reaches the
       tool result.
-- [ ] Inspect the layout block separately after a supported `.norm` edit
-      and an external file change. Record which refreshes the patch covers.
+- [x] Inspect the layout block separately after a supported `.norm` edit
+      and an external file change. Record when the refreshed index
+      reaches the provider and when the cached layout is reused.
 
 ## Delivery
 
@@ -138,3 +139,36 @@ both the shadowed sequence numbers and outgoing provider requests.
 - On `0.2.2-rc.5`, a fresh headless process resumed the same persisted
   session by ID. The restored instruction slot was already visible at
   pre-step and the provider received exactly one copy of the rule.
+
+### Write timing, scope eviction, and diagnostics
+
+Eight local stub-provider traces on DSH `0.2.2-rc.5` used candidate
+`3a1244e` and the sealed rc.1 engine. Each fixture ran in a separate
+temporary headless profile.
+
+- A first direct write to `a/new.md` completed before `a`'s rule appeared
+  in the automatic reminder. A separate `read` followed by `edit`
+  delivered the rule in the edit request. `norm_collect("a")` followed
+  by a new-file write delivered the rule in a tool result before the
+  request issued the write.
+- Reads of `a/guide.md` through `e/guide.md` produced final scopes
+  `[e, d, c, b]` in recency order. The last request had zero copies of
+  `a`'s exclusive rule. Every request had exactly one full root body.
+- Resuming the same persisted session with a bridge startup failure
+  removed the old body and surfaced the fixture's `fake/startup` code.
+  Resuming again with the sealed bridge restored one copy of the rule
+  and retired the unavailable notice. The earlier five-request probe
+  covers empty collection and recoverable collection errors on both
+  host endpoints.
+- A shell write to `a/shell.md` left the automatic scope at the root
+  and produced no post-edit diagnostic, even with a separate invalid
+  declaration present. The subsequent explicit collect delivered the
+  applicable `a` rule. A successful built-in edit of `a/.norm` that
+  introduced malformed YAML delivered soft validation feedback and an
+  unavailable notice while retiring the old rule body.
+- After a supported edit changed the layout description, the immediate
+  provider request still carried its previously assembled layout. The
+  following request contained the refreshed description. An external
+  change appeared in the collected rule block while the layout section
+  retained its cached description. The Skill records this timing.
+  [DSH Skill](../../skills/dsh-norm-spec/SKILL.md)

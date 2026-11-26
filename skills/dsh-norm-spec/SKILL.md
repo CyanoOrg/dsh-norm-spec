@@ -15,9 +15,11 @@ validator.
 - At each agent step, dsh-norm-spec recollects conventions for the active
   target through a persistent verified Rust bridge started per agent
   session.
-- A system-prompt layout index maps every directory that declares `.norm`
-  conventions (with its `metadata.description`). It refreshes after `.norm`
-  edits; editing a convention file updates the map on the next step.
+- A system-prompt layout index lists directories that declare `.norm`
+  conventions and their `metadata.description`. A supported `.norm` edit
+  marks the cache for refresh. The request immediately after the edit
+  can still carry the already assembled layout. External changes can
+  reach the collected rules while the layout uses its cached snapshot.
 - The layout map is per session: each session's prompt carries its own
   workspace's map, and agent-less surfaces (Code Mode) carry none.
 - Conventions use one durable `<system-reminder>` slot on the session

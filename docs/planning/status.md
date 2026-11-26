@@ -33,8 +33,10 @@
   Independent review found a cancellation race, now covered by a
   regression test. Native compaction passed at both host endpoints,
   and a fresh `0.2.2-rc.5` headless process resumed the same persisted
-  session with one rule copy. Hosted checks and maintainer review
-  remain open.
+  session with one rule copy. The remaining request-level fixtures
+  passed on `0.2.2-rc.5`, including write timing, scope eviction,
+  bridge startup failure and recovery, validation, and layout timing.
+  Hosted checks and maintainer review remain open.
   [Reminder lifecycle plan](reminder-lifecycle-plan.md)
 
 - 0.2.4 promotion in flight (2026-11-25, branch `chore/promote-0.2.4`).
