@@ -25,6 +25,15 @@
   description must be `ROOT-ONLY-MARKER`. Follow-up candidate: teach
   dsh-e2e-p4.mjs to self-heal the `allowBuilds` placeholders.
 
+- The next patch candidate addresses reminder retirement and restoration.
+  On 2026-11-26, a local stub provider captured the 0.2.4 adapter on host
+  0.2.2-rc.5 retaining old convention text after successful empty
+  collection and after a collection error. A separate session-surface
+  probe found that the same digest suppresses reinjection after the old
+  slot is shadowed. The plan records the evidence, proposed behavior
+  pending decision, and request-level gates.
+  [Reminder lifecycle plan](reminder-lifecycle-plan.md)
+
 - 0.2.4 promotion in flight (2026-11-25, branch `chore/promote-0.2.4`).
   Payload: the eight-site bump via `promote-version.sh 0.2.3 0.2.4`
   (workspace, root + five package manifests incl. the root's platform

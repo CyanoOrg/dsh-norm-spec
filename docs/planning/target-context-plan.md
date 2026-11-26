@@ -7,6 +7,13 @@ sessions, the approved direction for each, and the workstreams that follow.
 Decision records are written at workstream start, before implementation,
 per the repository update order.
 
+## Reminder lifecycle follow-up
+
+The [2026-11-26 reminder lifecycle plan](reminder-lifecycle-plan.md) records
+the 0.2.4 provider-request probes and the proposed regression matrix for
+retiring or restoring the adapter-owned slot. It carries the patch scope
+and the pending lifecycle decision.
+
 ## Findings
 
 ### F1 — Active-target tracking is inoperative (defect)
