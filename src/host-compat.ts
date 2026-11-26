@@ -51,21 +51,23 @@ export function hostSessionEvents(session: Session): readonly SessionEvent[] {
 }
 
 /**
- * Whether a message source belongs to this plugin on any host line:
+ * Whether a message source has the expected producer and form on any host line:
  * the rc.6 shared shape (`kind: "plugin"` + `plugin` name) or the 0.2.0
  * per-producer shape (`kind` = the plugin's own name).
  *
  * @param source - the event message source to test.
  * @param pluginName - this plugin's registry name.
- * @returns true when the source names this plugin.
+ * @param form - the message form used by the managed slot.
+ * @returns true when both producer and form match.
  */
 export function isOwnReminderSource(
   source: unknown,
   pluginName: string,
+  form: "instructions" | "notice",
 ): boolean {
   if (source === null || typeof source !== "object") return false;
-  const candidate = source as { kind?: unknown; plugin?: unknown };
-  return (
+  const candidate = source as { kind?: unknown; plugin?: unknown; form?: unknown };
+  return candidate.form === form && (
     (candidate.kind === "plugin" && candidate.plugin === pluginName)
     || candidate.kind === pluginName
   );
@@ -80,7 +82,7 @@ export function isOwnReminderSource(
  *
  * @param pluginName - this plugin's registry name.
  * @param form - `instructions` for the convention reminder, `notice`
- *   for the bounded post-edit feedback account.
+ *   for reminder status and bounded post-edit feedback.
  * @param summary - required one-line account when `form` is `notice`.
  * @returns a host-valid message source object.
  */

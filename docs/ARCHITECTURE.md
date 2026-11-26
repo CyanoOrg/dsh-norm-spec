@@ -34,12 +34,14 @@ The plugin adapts five DSH surfaces:
 | `tools/post-execute` | waterfall | Post-edit validation feedback on write/edit |
 | `ctx.tools.register` | — | `norm_validate` / `norm_collect` / `norm_scan` native tools |
 
-Injection model follows the DSH `agent-instructions` idiom: one durable
-user-role `<system-reminder>` message with a typed source, SHA-1 content
-digest for re-injection suppression, and most-specific-first ordering. It
-does NOT follow pi's per-turn deep-copy model — DSH rc.6 has no
-per-provider-turn context-copy event, and durable injection is
-KV-cache-friendly.
+Injection follows the DSH `agent-instructions` idiom. The adapter keeps
+one durable user-role `<system-reminder>` in the session surface, with a
+typed source and most-specific-first ordering. D022 reconciles that slot
+against fresh collection and the visible surface at each entering step.
+An identical visible reminder is reused. Empty collection retires the
+previous reminder with a contentless notice. A collection failure uses
+an unavailable notice with the error code. Each replacement cites the
+shadowed event, so the original remains in the session log.
 
 ## Hard constraint: no custom session event types
 
@@ -50,7 +52,7 @@ event makes the entire session log unloadable. dsh-norm-spec therefore:
 - never calls `session.append` with a custom type;
 - keeps all model-visible output in standard user messages and tool
   results;
-- records adapter diagnostics only in plugin logs, not the session log.
+- reports unavailable convention context in a standard user notice.
 
 ## `dsh-norm-engine`
 

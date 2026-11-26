@@ -20,10 +20,10 @@ validator.
   edits; editing a convention file updates the map on the next step.
 - The layout map is per session: each session's prompt carries its own
   workspace's map, and agent-less surfaces (Code Mode) carry none.
-- Conventions are injected as a single durable `<system-reminder>` user
-  message. When conventions change, the previous reminder is replaced in
-  place on the session surface: occupancy stays bounded at one message,
-  and superseded versions are no longer model-visible.
+- Conventions use one durable `<system-reminder>` slot on the session
+  surface. Empty collection retires the old text. Collection failure
+  replaces it with an unavailable notice and error code. A new successful
+  collection restores the current instructions if they apply.
 - The active target follows successful `read`/`edit`/`write` tool calls
   and resolves to the touched file's parent directory (D013). Shell
   commands and custom-tool fields are not guessed for paths.

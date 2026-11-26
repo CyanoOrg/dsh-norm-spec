@@ -3,6 +3,15 @@
 All notable changes are documented here under `[Unreleased]` until release
 preparation.
 
+## [Unreleased]
+
+### Fixed
+
+- Reconcile the convention reminder with the current session surface
+  (D022). Empty collection and collection failures retire old rule text.
+  Failures retain a visible error code, and an unchanged reminder is
+  restored when its visible slot disappears.
+
 ## [0.2.4] - 2026-11-25
 
 ### Fixed

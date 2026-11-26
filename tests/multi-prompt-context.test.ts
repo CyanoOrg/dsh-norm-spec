@@ -4,7 +4,6 @@ import test from "node:test";
 import { pushTarget } from "../src/target-tracking.ts";
 import {
   PROMPT_CONTEXT_MULTI_API,
-  multiContextDigest,
   parseMultiPromptContext,
   renderMultiSystemReminder,
 } from "../src/multi-prompt-context.ts";
@@ -34,7 +33,6 @@ test("multi context parses a valid payload", () => {
     prompt: "DSH_NORM_SPEC_CONTEXT_MULTI_V1\nEND_DSH_NORM_SPEC_CONTEXT_MULTI_V1",
   });
   assert.equal(context.scopes.length, 2);
-  assert.equal(multiContextDigest(context).length, 40);
   const reminder = renderMultiSystemReminder(context);
   assert.match(reminder, /scoped directories enumerated below, most recent first/);
   assert.match(reminder, /Conventions from: docs\/\.norm, \.norm/);

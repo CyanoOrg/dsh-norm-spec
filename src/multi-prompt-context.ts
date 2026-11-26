@@ -1,5 +1,4 @@
 import { BridgeClientError } from "./bridge-client.ts";
-import { digestText } from "./validation-feedback.ts";
 
 /** Machine API identifier for the merged multi-target prompt context. */
 export const PROMPT_CONTEXT_MULTI_API = "dsh-norm-spec/prompt-context-multi/v1";
@@ -63,8 +62,7 @@ export function parseMultiPromptContext(value: unknown): MultiPromptContextResul
 
 /**
  * Render the system-reminder text for a merged multi-scope context: one
- * durable user message whose digest suppression and single-slot replacement
- * behave exactly as the single-target injection did (D002/D008/D016).
+ * durable user message managed through a single visible slot (D016/D022).
  */
 export function renderMultiSystemReminder(context: MultiPromptContextResult): string {
   const body = context.prompt ?? "";
@@ -79,11 +77,6 @@ export function renderMultiSystemReminder(context: MultiPromptContextResult): st
     `Conventions from: ${paths.join(", ")}`,
     "</system-reminder>",
   ].join("\n");
-}
-
-/** Digest over the rendered reminder content, for re-injection suppression. */
-export function multiContextDigest(context: MultiPromptContextResult): string {
-  return digestText(context.prompt ?? "");
 }
 
 function isScope(value: unknown): value is MultiScopeContext {

@@ -21,11 +21,10 @@ This adapter delivers convention knowledge the way a cache wants it:
 Delivery is host-specific. On supported DSH hosts (rc.6 through
 0.2.2-rc.5, D017 as amended by D021) the injection seam
 (`agent/pre-step`) writes into the session log, so the reminder is
-durable: injected once, suppressed while unchanged (SHA-1 digest), and —
-when the collected conventions change — **superseded in place through a
-single slot** (`surfaceOp` replace). The model never carries stale
-conventions and occupancy stays bounded no matter how long the session
-drifts across directories. The same format and semantics run under a
+durable. The adapter reuses an unchanged visible reminder and
+**replaces it in place through a single slot** (`surfaceOp` replace)
+when collection changes, becomes empty, or fails. Original messages
+remain in the session log for replay. The same format and semantics run under a
 different host in [pi-norm-spec](https://github.com/CyanoOrg/pi-norm-spec)
 — the delivery layer is the host-specific part, and that boundary is the
 point.
@@ -58,9 +57,9 @@ lookups, no environment variables. Platform binaries arrive through npm
 - Injects collected `.norm` conventions at `agent/pre-step` as one durable
   `<system-reminder>` user message, most-specific first — the same
   injection idiom as dsh's own `agent-instructions`. The reminder occupies
-  at most one session-surface slot: unchanged conventions are
-  digest-suppressed, changed ones supersede the previous reminder in
-  place (single-slot replacement, D008).
+  at most one active session-surface slot. Empty collection retires
+  old rules, and collection failure replaces them with a notice
+  carrying an error code (D022).
 - After successful `write`/`edit` tool calls, appends bounded strict
   validation feedback through `tools/post-execute` (soft feedback; never
   blocks or reverts).

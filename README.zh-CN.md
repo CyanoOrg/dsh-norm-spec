@@ -17,10 +17,10 @@ DeepSeek Harness (dsh) 的 Cordis 插件适配器，为 [norm-spec](https://gith
 
 递送是宿主相关的。受支持的 DSH 宿主（rc.6 至 0.2.2-rc.5，D017 经
 D021 修订）的注入口（`agent/pre-step`）写入会话
-日志，因此提醒是 durable 的：注入一次、未变化时被抑制（SHA-1
-digest）、收集到的约定变化时**通过单一槽位原地取代**（`surfaceOp`
- replace）。模型永远不会携带过期约定，占用有界——无论会话跨目录
-漂移多久。同一套格式与语义运行在不同宿主上的另一个适配器是
+日志，提醒会保留在会话中。适配器复用内容相同且仍可见的提醒。
+收集内容发生变化、为空或失败时，**通过单一槽位原地替换**
+（`surfaceOp` replace）。原消息保留在日志中供回放。
+同一套格式与语义运行在不同宿主上的另一个适配器是
 [pi-norm-spec](https://github.com/CyanoOrg/pi-norm-spec)——递送层是
 宿主相关的部分，这条边界正是意义所在。
 
@@ -51,8 +51,8 @@ npm `optionalDependencies`（`darwin-arm64`、`darwin-x64`、
 - 在 `agent/pre-step` 把收集到的 `.norm` 约定注入为一条 durable 的
   `<system-reminder>` 用户消息，最具体的优先——与 dsh 自身
   `agent-instructions` 相同的注入惯用法。提醒在会话表面至多占用一个
-  槽位：未变化的约定被 digest 抑制，变化的约定原地取代前一条
-  （单槽替换，D008）。
+  活动槽位。收集成功且为空时撤下旧约定，收集失败时改为带错误码的
+  提示（D022）。
 - `write`/`edit` 工具成功后，通过 `tools/post-execute` 追加有界的
   严格校验反馈（软反馈；从不阻断或回滚）。
 - 注册原生 `norm_validate` / `norm_collect` / `norm_scan` 工具与一个

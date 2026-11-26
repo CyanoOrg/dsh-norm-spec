@@ -15,7 +15,7 @@ import { relative } from "node:path";
 import type { Context } from "@deepseek-ai/cordis";
 import type { AssembleContext } from "@deepseek-ai/dsh-system-prompt";
 import type { Agent, PreStepDecision } from "@deepseek-ai/dsh-agent";
-import type { Session } from "@deepseek-ai/dsh-session";
+import type { Session, SessionEvent } from "@deepseek-ai/dsh-session";
 import type { PostToolDecision, ToolExecution, ToolExecutionResult } from "@deepseek-ai/dsh-tools";
 import { createUserMessage, type UserMessage } from "@deepseek-ai/dsh-llm";
 
@@ -41,7 +41,6 @@ import {
 import { loadSkillRegistration } from "./skill-registration.ts";
 import { parseLayoutIndex } from "./layout-index.ts";
 import {
-  multiContextDigest,
   parseMultiPromptContext,
   renderMultiSystemReminder,
   type MultiPromptContextResult,
@@ -93,11 +92,8 @@ interface LayoutSnapshot {
 interface SessionState {
   client: BridgeClient | undefined;
   failure: BridgeClientError | undefined;
-  lastDigest: string | undefined;
-  lastContext: MultiPromptContextResult | undefined;
   /** Bounded recency set of convention targets; index 0 is most recent (D016). */
   activeTargets: string[];
-  onboardingNotified: boolean;
   validationFailure: BridgeClientError | undefined;
   validationTail: Promise<void>;
   disposed: boolean;
@@ -143,10 +139,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       state = {
         client: undefined,
         failure: undefined,
-        lastDigest: undefined,
-        lastContext: undefined,
         activeTargets: ["."],
-        onboardingNotified: false,
         validationFailure: undefined,
         validationTail: Promise.resolve(),
         disposed: false,
@@ -268,10 +261,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       ambientState = {
         client: undefined,
         failure: undefined,
-        lastDigest: undefined,
-        lastContext: undefined,
         activeTargets: ["."],
-        onboardingNotified: false,
         validationFailure: undefined,
         validationTail: Promise.resolve(),
         disposed: false,
@@ -323,27 +313,67 @@ export function apply(ctx: Context, config: Config = {}): void {
     }
   };
 
-  /** Locate the current convention slot on the session surface (D008). */
-  const findConventionSlot = (session: Session) => {
-    const surface = new Set<number>(session.surface.nodes);
+  /** Find owned slots on the current surface, including legacy duplicates. */
+  const conventionSlots = (session: Session) => {
     const events = hostSessionEvents(session);
-    for (let index = events.length - 1; index >= 0; index -= 1) {
-      const event = events[index];
-      if (event === undefined || event.type !== "user/message") continue;
-      if (!isOwnReminderSource(event.data.source, PLUGIN_NAME)) continue;
-      if (surface.has(event.seq)) {
-        return { seq: event.seq, text: reminderTextOf(event.data) };
+    const slots: { seq: SessionEvent["seq"]; text: string | undefined }[] = [];
+    for (const seq of session.surface.nodes) {
+      // Both host lines define sequence numbers as contiguous log offsets.
+      const event = events[seq];
+      if (event?.type !== "user/message") continue;
+      if (
+        isOwnReminderSource(event.data.source, PLUGIN_NAME, "instructions")
+        || isOwnReminderSource(event.data.source, SOURCE_KIND, "notice")
+      ) {
+        slots.push({ seq: event.seq, text: reminderTextOf(event.data) });
       }
-      // An own message shadowed off the surface (compaction) ends the scan:
-      // a later replacement is impossible and a fresh slot may append.
-      return null;
     }
-    return undefined;
+    return slots;
   };
 
-  const reminderTextOf = (message: UserMessage): string => {
+  const reminderTextOf = (message: UserMessage): string | undefined => {
     const first = message.content[0];
-    return first !== undefined && first.type === "text" ? first.text : "";
+    return first?.type === "text" ? first.text : undefined;
+  };
+
+  /** Reconcile against the visible slot, including after host compaction (D022). */
+  const reconcileReminder = (
+    session: Session,
+    decision: Extract<PreStepDecision, { kind: "enter" }>,
+    messages: UserMessage[],
+    message: UserMessage,
+  ): PreStepDecision => {
+    const [slot, ...duplicates] = conventionSlots(session);
+    for (const duplicate of duplicates) {
+      session.append("user/message", createUserMessage({
+        content: [],
+        source: pluginReminderSource(PLUGIN_NAME, "notice", "Superseded .norm reminder"),
+      }), {
+        surfaceOp: replaceSurfaceOp(duplicate.seq),
+        sourceEventSeqs: [duplicate.seq],
+      });
+    }
+    if (slot !== undefined) {
+      if (slot.text !== reminderTextOf(message)) {
+        session.append("user/message", message, {
+          surfaceOp: replaceSurfaceOp(slot.seq),
+          sourceEventSeqs: [slot.seq],
+        });
+      }
+      return decision;
+    }
+    if (message.content.length === 0) return decision;
+
+    // New slots follow the last claimed message. Some host lines re-wrap
+    // claimed messages, so the end of the decision is the safe fallback.
+    const lastClaimedIndex = decision.messages.findLastIndex((m) => messages.includes(m));
+    const insertAt = lastClaimedIndex >= 0
+      ? lastClaimedIndex + 1
+      : decision.messages.length;
+    return {
+      ...decision,
+      messages: decision.messages.toSpliced(insertAt, 0, message),
+    };
   };
 
   /** Refresh the layout-index cache; a failure never blocks the step (D015). */
@@ -380,18 +410,28 @@ export function apply(ctx: Context, config: Config = {}): void {
     next: () => Promise<PreStepDecision>,
   ): Promise<PreStepDecision> => {
     const decision = await next();
-    if (decision.kind !== "enter") return decision;
+    if (decision.kind !== "enter" || signal.aborted) return decision;
     const state = stateFor(agent);
     // Ensure the bridge is up before the first injection: session-start
     // kicked it off, but pre-step may win the race on fast first steps.
     await startBridgeFor(state);
+    if (signal.aborted) return decision;
     const cwd = agent.session.header.cwd ?? process.cwd();
     const client = state.client;
+    const unavailable = (failure: BridgeClientError): PreStepDecision =>
+      reconcileReminder(agent.session, decision, messages, createUserMessage({
+        content: [{ type: "text", text: `.norm conventions unavailable [${failure.code}].` }],
+        source: pluginReminderSource(SOURCE_KIND, "notice", ".norm conventions unavailable"),
+      }));
     if (client === undefined || client.getStatus().state !== "ready") {
-      return decision;
+      return unavailable(state.failure ?? new BridgeClientError(
+        "dsh-norm-spec/client/context-unavailable",
+        "the verified bridge is not ready for convention collection",
+      ));
     }
     await refreshLayoutIndex(state, client, cwd, signal);
 
+    let context: MultiPromptContextResult;
     try {
       const value = await withLease(state, () =>
         client.request<unknown>(
@@ -399,63 +439,23 @@ export function apply(ctx: Context, config: Config = {}): void {
           { root: cwd, targets: state.activeTargets },
           signal,
         ));
-      const context = parseMultiPromptContext(value);
-      state.lastContext = context;
-      if (context.prompt === null) {
-        notifyOnboarding(state);
-        return decision;
-      }
-      const digest = multiContextDigest(context);
-      if (digest === state.lastDigest) return decision;
+      context = parseMultiPromptContext(value);
+    } catch (error) {
+      if (signal.aborted || error instanceof BridgeRequestCancelledError) return decision;
+      return unavailable(asBridgeError(error));
+    }
+    if (signal.aborted) return decision;
 
-      const reminder = renderMultiSystemReminder(context);
-      const slot = findConventionSlot(agent.session);
-      if (slot !== null && slot !== undefined) {
-        if (slot.text === reminder) {
-          state.lastDigest = digest;
-          return decision;
-        }
-        // Single-slot replacement (D008): shadow the previous reminder in
-        // place through a session surface replace; the step's claimed
-        // messages stay untouched, so no splice into decision.messages.
-        agent.session.append(
-          "user/message",
-          createUserMessage({
-            content: [{ type: "text", text: reminder }],
-            source: pluginReminderSource(PLUGIN_NAME, "instructions"),
-          }),
-          {
-            surfaceOp: replaceSurfaceOp(slot.seq),
-            sourceEventSeqs: [slot.seq],
-          },
-        );
-        state.lastDigest = digest;
-        return decision;
-      }
-      state.lastDigest = digest;
-
-      const message = createUserMessage({
-        content: [{ type: "text", text: reminder }],
+    const message = context.prompt === null
+      ? createUserMessage({
+        content: [],
+        source: pluginReminderSource(SOURCE_KIND, "notice", "No active .norm conventions"),
+      })
+      : createUserMessage({
+        content: [{ type: "text", text: renderMultiSystemReminder(context) }],
         source: pluginReminderSource(PLUGIN_NAME, "instructions"),
       });
-      // Anchor the reminder after the step's last claimed message when the
-      // identity match holds (rc.6 hands the same instances); on hosts where
-      // the decision re-wraps messages in fresh instances the match is empty,
-      // and a leading insert would be dropped at request assembly — append
-      // at the end instead, the sanctioned plugin shape upstream tests use.
-      const lastClaimedIndex = decision.messages.findLastIndex((m) => messages.includes(m));
-      const insertAt = lastClaimedIndex >= 0
-        ? lastClaimedIndex + 1
-        : decision.messages.length;
-      return {
-        ...decision,
-        messages: decision.messages.toSpliced(insertAt, 0, message),
-      };
-    } catch (error) {
-      if (error instanceof BridgeRequestCancelledError) return decision;
-      state.failure = asBridgeError(error);
-      return decision;
-    }
+    return reconcileReminder(agent.session, decision, messages, message);
   };
 
   const validateAfterTool = async (
@@ -667,11 +667,6 @@ function appendFeedback(
     };
   }
   return { ...decision, content: [{ type: "text", text }] } as PostToolDecision;
-}
-
-function notifyOnboarding(state: SessionState): void {
-  if (state.onboardingNotified) return;
-  state.onboardingNotified = true;
 }
 
 async function defaultLaunch(): Promise<BridgeLaunch> {
