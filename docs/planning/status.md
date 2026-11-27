@@ -2,12 +2,13 @@
 
 ## Resume here
 
-- `0.2.5` patch promotion on `chore/promote-0.2.5` (2026-11-27).
-  PR #34 fast-forwarded `main` to the reviewed D022 head `595cdbc` after
-  all 11 PR checks passed. This promotion updates the eight version
-  sites, both lockfiles, and the release record. `0.2.4` remains the
-  current published version during release preparation.
-  [Merged correction](https://github.com/CyanoOrg/dsh-norm-spec/pull/34)
+- Stage: **0.2.5 shipped** (2026-11-27). PR #34 fast-forwarded
+  `main` to reviewed D022 head `595cdbc`. PR #35 promoted the patch
+  at `005afa38` and the signed `v0.2.5` tag points to that commit.
+  All five public npm tarballs match the tag-build artifacts.
+  On DSH `0.2.2-rc.5`, P4 passed against the registry package and
+  the installed plugin passed the five-request D022 lifecycle probe.
+  [GitHub Release](https://github.com/CyanoOrg/dsh-norm-spec/releases/tag/v0.2.5)
 
 - Stage: **0.2.4 shipped** (2026-11-25). Full arc: host-sync PR #31
   (D021) ff-merged as `84fcc13` after 11/11 checks; promotion PR #32
@@ -305,6 +306,17 @@
   no `PATH` fallback for the bridge (packaged resolution is live since
   D011; env override remains for development); enforcement subset empty
   (D006).
+
+## Verification snapshot (2026-11-27, 0.2.5)
+
+| Gate | Result |
+|---|---|
+| Correction and promotion | 11/11 checks and maintainer approval on each of [PR #34](https://github.com/CyanoOrg/dsh-norm-spec/pull/34) and [PR #35](https://github.com/CyanoOrg/dsh-norm-spec/pull/35). |
+| Signed tag and candidate artifacts | GitHub verified `v0.2.5` at `005afa38`. All five archives passed checksum and inventory verification from [tag run 45935505297](https://github.com/CyanoOrg/dsh-norm-spec/actions/runs/45935505297). |
+| Public npm artifacts | All five `latest` tags resolve to 0.2.5. Registry SHA-512 integrity and downloaded bytes match the exact tag archives for all five packages. |
+| P4 registry E2E | PASS on DSH `0.2.2-rc.5` in a fresh isolated pnpm profile with no bridge or payload overrides. The provider request carried the reminder. The packaged bridge returned the layout marker and sample root description. |
+| D022 registry regression | PASS on the same npm installation. Across five model requests, rule counts were `1, 0, 1, 0, 1`. Only the failure request reported unavailability. |
+| GitHub Release | [v0.2.5](https://github.com/CyanoOrg/dsh-norm-spec/releases/tag/v0.2.5) published and marked Latest. |
 
 ## Verification snapshot (2026-11-25, 0.2.4)
 

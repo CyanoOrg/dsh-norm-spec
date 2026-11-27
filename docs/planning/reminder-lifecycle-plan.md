@@ -1,7 +1,9 @@
 # Convention Reminder Lifecycle Plan
 
-Opened 2026-11-26 for a patch on the 0.2 line. D022 records the reminder
-lifecycle decision. [Decision records](../decisions.md)
+This plan opened on 2026-11-26. The D022 reminder lifecycle fix
+shipped in 0.2.5 on 2026-11-27. The release snapshot records the
+registry install and provider-request checks.
+[Decision records](../decisions.md) · [Release verification](status.md#verification-snapshot-2026-11-27-025)
 
 ## Evidence on 0.2.4
 

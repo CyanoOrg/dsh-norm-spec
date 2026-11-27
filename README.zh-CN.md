@@ -24,7 +24,7 @@ D021 修订）的注入口（`agent/pre-step`）写入会话
 [pi-norm-spec](https://github.com/CyanoOrg/pi-norm-spec)——递送层是
 宿主相关的部分，这条边界正是意义所在。
 
-**状态：`0.2.4` stable，已发布到 npm：
+**状态：`0.2.5` stable，已发布到 npm：
 [`@cyanoorg/dsh-norm-spec`](https://www.npmjs.com/package/@cyanoorg/dsh-norm-spec)。
 DSH 宿主窗口：`@deepseek-ai/dsh@0.1.0-rc.6` 至 `0.2.2-rc.5`
 （D017 经 D021 修订；rc.6 下限由 CI 持续验证）。**
