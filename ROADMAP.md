@@ -74,6 +74,11 @@ installed host, Node 24 CI, and test-fixture-only adaptation (the
 required `modelSelection` on pre-step payloads; a probed tool executor
 for 0.2.1+-line prompt assembly). Production code unchanged.
 
+The 0.2.5 patch is in release preparation. It reconciles reminder
+retirement and restoration against the DSH session surface (D022).
+PR #34 merged the fix and its request-level acceptance evidence.
+[Reminder lifecycle plan](docs/planning/reminder-lifecycle-plan.md)
+
 Note: single-slot convention replacement — the bounded-occupancy
 follow-up approved in D008 — was implemented and verified on
 2026-08-15 and has shipped in every published version since

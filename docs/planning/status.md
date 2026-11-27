@@ -2,6 +2,13 @@
 
 ## Resume here
 
+- `0.2.5` patch promotion on `chore/promote-0.2.5` (2026-11-27).
+  PR #34 fast-forwarded `main` to the reviewed D022 head `595cdbc` after
+  all 11 PR checks passed. This promotion updates the eight version
+  sites, both lockfiles, and the release record. `0.2.4` remains the
+  current published version during release preparation.
+  [Merged correction](https://github.com/CyanoOrg/dsh-norm-spec/pull/34)
+
 - Stage: **0.2.4 shipped** (2026-11-25). Full arc: host-sync PR #31
   (D021) ff-merged as `84fcc13` after 11/11 checks; promotion PR #32
   ff-merged as `768384b` (eight-site bump + locks, CHANGELOG 0.2.4,
@@ -25,9 +32,9 @@
   description must be `ROOT-ONLY-MARKER`. Follow-up candidate: teach
   dsh-e2e-p4.mjs to self-heal the `allowBuilds` placeholders.
 
-- D022 reminder retirement and restoration is a local patch candidate
-  on `fix/reminder-lifecycle` (2026-11-26). The decision is `dd5edfb`
-  and the implementation is `3a1244e`. The request probe reproduced old
+- D022 reminder retirement and restoration merged in PR #34 on
+  2026-11-27 at `595cdbc`. The decision is `dd5edfb` and the
+  implementation is `3a1244e`. The request probe reproduced old
   rule text after empty collection and a parse error on 0.2.4. The
   candidate passes the probe on DSH `0.1.0-rc.6` and `0.2.2-rc.5`.
   Independent review found a cancellation race, now covered by a
@@ -36,7 +43,7 @@
   session with one rule copy. The remaining request-level fixtures
   passed on `0.2.2-rc.5`, including write timing, scope eviction,
   bridge startup failure and recovery, validation, and layout timing.
-  Hosted checks and maintainer review remain open.
+  The 11 hosted checks and maintainer approval are recorded on PR #34.
   [Reminder lifecycle plan](reminder-lifecycle-plan.md)
 
 - 0.2.4 promotion in flight (2026-11-25, branch `chore/promote-0.2.4`).
